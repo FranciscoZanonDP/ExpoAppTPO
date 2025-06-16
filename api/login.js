@@ -25,31 +25,50 @@ module.exports = async (req, res) => {
 
         const { action } = req.body;
         if (action === 'recuperar') {
-            // Recuperación de contraseña: enviar código
+            console.log('[RECUPERAR] Solicitud recibida:', req.body);
             const { email } = req.body;
             if (!email) {
+                console.log('[RECUPERAR] Email no recibido');
                 return res.status(400).json({ error: 'Email requerido' });
             }
             // Verificar que el usuario exista
-            const userResult = await pool.query('SELECT id FROM usuarios WHERE email = $1', [email]);
+            let userResult;
+            try {
+                userResult = await pool.query('SELECT id FROM usuarios WHERE email = $1', [email]);
+                console.log('[RECUPERAR] Resultado usuario:', userResult.rows);
+            } catch (e) {
+                console.log('[RECUPERAR] Error consultando usuario:', e);
+                throw e;
+            }
             if (userResult.rows.length === 0) {
+                console.log('[RECUPERAR] Usuario no encontrado');
                 return res.status(404).json({ error: 'Usuario no encontrado' });
             }
             const codigo = generarCodigo();
-            // Guardar código en la tabla (upsert)
-            await pool.query(
-                `INSERT INTO recuperacion_password (email, codigo, creado_en)
-                 VALUES ($1, $2, NOW())
-                 ON CONFLICT (email) DO UPDATE SET codigo = EXCLUDED.codigo, creado_en = NOW()`,
-                [email, codigo]
-            );
-            // Enviar email
-            await transporter.sendMail({
-                from: 'Cookit <panchizanon@gmail.com>',
-                to: email,
-                subject: 'Código de recuperación de contraseña',
-                text: `Tu código de recuperación es: ${codigo} (válido por 30 minutos)`
-            });
+            try {
+                await pool.query(
+                    `INSERT INTO recuperacion_password (email, codigo, creado_en)
+                     VALUES ($1, $2, NOW())
+                     ON CONFLICT (email) DO UPDATE SET codigo = EXCLUDED.codigo, creado_en = NOW()`,
+                    [email, codigo]
+                );
+                console.log('[RECUPERAR] Código guardado en DB:', codigo);
+            } catch (e) {
+                console.log('[RECUPERAR] Error guardando código en DB:', e);
+                throw e;
+            }
+            try {
+                await transporter.sendMail({
+                    from: 'Cookit <panchizanon@gmail.com>',
+                    to: email,
+                    subject: 'Código de recuperación de contraseña',
+                    text: `Tu código de recuperación es: ${codigo} (válido por 30 minutos)`
+                });
+                console.log('[RECUPERAR] Email enviado a', email);
+            } catch (e) {
+                console.log('[RECUPERAR] Error enviando email:', e);
+                throw e;
+            }
             return res.status(200).json({ enviado: true });
         }
         if (action === 'cambiar') {
@@ -98,6 +117,7 @@ module.exports = async (req, res) => {
         // Puedes devolver más datos del usuario si quieres
         return res.status(200).json({ message: 'Login exitoso', user: { id: user.id, nombre: user.nombre, email: user.email, userType: user.user_type } });
     } catch (err) {
+        console.log('[ERROR GENERAL]', err);
         // Siempre responde en JSON incluso en errores inesperados
         return res.status(500).json({ error: 'Error interno del servidor', detalle: err.message });
     }
