@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, Modal, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
@@ -106,22 +106,36 @@ export default function CursoDetalleScreen() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const curso = cursos[id as keyof typeof cursos];
-    const [isLogged, setIsLogged] = useState<boolean | null>(null);
-    const [tipoUsuario, setTipoUsuario] = useState<'visitante' | 'alumno' | null>(null);
+    const [isLogged, setIsLogged] = React.useState<boolean | null>(null);
+    const [tipoUsuario, setTipoUsuario] = React.useState<'visitante' | 'alumno' | null>(null);
+    const [modalVisible, setModalVisible] = React.useState(false);
+    const [sedeSeleccionada, setSedeSeleccionada] = React.useState<string | null>(null);
 
-    useEffect(() => {
-        AsyncStorage.getItem('usuario').then((usuario) => {
-            if (!usuario) setTipoUsuario('visitante');
-            else {
-                try {
-                    const user = JSON.parse(usuario);
-                    setTipoUsuario(user.userType === 'Alumno' ? 'alumno' : 'visitante');
-                } catch {
-                    setTipoUsuario('visitante');
+    useFocusEffect(
+        React.useCallback(() => {
+            AsyncStorage.getItem('usuario').then((usuario) => {
+                if (!usuario) setTipoUsuario('visitante');
+                else {
+                    try {
+                        const user = JSON.parse(usuario);
+                        setTipoUsuario(user.userType?.toLowerCase() === 'alumno' ? 'alumno' : 'visitante');
+                    } catch {
+                        setTipoUsuario('visitante');
+                    }
                 }
-            }
-        });
-    }, []);
+            });
+        }, [])
+    );
+
+    const handleInscribirse = () => {
+        if (curso.sedes && curso.sedes.length > 1) {
+            setModalVisible(true);
+        } else if (curso.sedes && curso.sedes.length === 1) {
+            router.push({ pathname: '/views/pago-curso', params: { id, sede: curso.sedes[0].nombre } });
+        } else {
+            alert('No hay sedes disponibles para este curso.');
+        }
+    };
 
     if (!curso) {
         return (
@@ -208,11 +222,32 @@ export default function CursoDetalleScreen() {
                         <Text style={styles.inscribirseBtnText}>Atrás</Text>
                     </TouchableOpacity>
                 ) : (
-                    <TouchableOpacity style={styles.inscribirseBtn} onPress={() => router.push({ pathname: '/views/pago-curso', params: { id } })}>
+                    <TouchableOpacity style={styles.inscribirseBtn} onPress={handleInscribirse}>
                         <Text style={styles.inscribirseBtnText}>Inscribirse</Text>
                     </TouchableOpacity>
                 )}
             </ScrollView>
+            {/* Modal selección de sede */}
+            <Modal visible={modalVisible} transparent animationType="slide">
+                <View style={{ flex:1, backgroundColor:'rgba(0,0,0,0.4)', justifyContent:'center', alignItems:'center' }}>
+                    <View style={{ backgroundColor:'#fff', borderRadius:16, padding:24, width:'80%' }}>
+                        <Text style={{ fontWeight:'bold', fontSize:18, marginBottom:12 }}>Seleccioná una sede</Text>
+                        {curso.sedes?.map((sede, idx) => (
+                            <Pressable key={idx} style={{ padding:12, borderBottomWidth:1, borderColor:'#eee' }} onPress={() => {
+                                setModalVisible(false);
+                                setSedeSeleccionada(sede.nombre);
+                                router.push({ pathname: '/views/pago-curso', params: { id, sede: sede.nombre } });
+                            }}>
+                                <Text style={{ fontSize:16 }}>{sede.nombre} - {sede.horarios}</Text>
+                                <Text style={{ color:'#888', fontSize:13 }}>{sede.direccion}</Text>
+                            </Pressable>
+                        ))}
+                        <Pressable style={{ marginTop:16, alignSelf:'flex-end' }} onPress={() => setModalVisible(false)}>
+                            <Text style={{ color:'#FF7B6B', fontWeight:'bold' }}>Cancelar</Text>
+                        </Pressable>
+                    </View>
+                </View>
+            </Modal>
             {/* Footer navegación igual al home */}
             <View style={styles.footer}>
                 <TouchableOpacity style={styles.footerTab} onPress={() => router.replace('/views/home')}>

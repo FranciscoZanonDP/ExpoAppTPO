@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect } from 'react';
 
 const cursos = {
     curso1: {
@@ -26,10 +27,17 @@ const cursos = {
 
 export default function PagoCursoScreen() {
     const router = useRouter();
-    const { id } = useLocalSearchParams();
+    const { id, sede } = useLocalSearchParams();
     const curso = cursos[id as keyof typeof cursos];
     const tarjeta = '******** 4512';
     const precio = curso?.precio || '$--';
+
+    useEffect(() => {
+        if (!sede) {
+            alert('Debes seleccionar una sede.');
+            router.replace({ pathname: '/views/curso-detalle', params: { id } });
+        }
+    }, [sede]);
 
     const handlePagar = async () => {
         try {
@@ -42,10 +50,16 @@ export default function PagoCursoScreen() {
             const res = await fetch('https://expo-app-tpo.vercel.app/api/inscripciones', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ usuario_email: usuario.email, curso_id: id }),
+                body: JSON.stringify({ usuario_email: usuario.email, curso_id: id, sede }),
             });
             if (!res.ok) {
-                alert('Error al inscribirse.');
+                const data = await res.json();
+                if (data?.error?.includes('vacantes')) {
+                    alert('No hay vacantes disponibles en esta sede. Por favor, elegí otra sede.');
+                    router.replace({ pathname: '/views/curso-detalle', params: { id } });
+                } else {
+                    alert('Error al inscribirse.');
+                }
                 return;
             }
             router.replace({ pathname: '/views/inscripcion-realizada', params: { id } });
