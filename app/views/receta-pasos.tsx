@@ -1,4 +1,4 @@
-import { StyleSheet, View, TouchableOpacity, SafeAreaView, ScrollView, Text, Linking } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, SafeAreaView, ScrollView, Text, Linking, Image } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -94,10 +94,21 @@ export default function RecetaPasosScreen() {
                                     {expanded === idx && (
                                         <View style={{ marginTop: 4, marginBottom: 2 }}>
                                             <ThemedText style={styles.pasoDescripcion}>{paso.descripcion}</ThemedText>
-                                            {paso.video_url && (
-                                                <TouchableOpacity onPress={() => handleVerVideo(paso.video_url)}>
-                                                    <Text style={styles.verVideo}>Ver video</Text>
-                                                </TouchableOpacity>
+                                            {Array.isArray(paso.medios) && paso.medios.length > 0 && (
+                                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8 }}>
+                                                    {paso.medios.map((medio: any, mIdx: number) => (
+                                                        medio.tipo === 'imagen' ? (
+                                                            <Image key={mIdx} source={{ uri: medio.url }} style={{ width: 180, height: 120, borderRadius: 8, marginRight: 10 }} />
+                                                        ) : medio.tipo === 'video' ? (
+                                                            <TouchableOpacity key={mIdx} onPress={() => handleVerVideo(medio.url)} style={{ marginRight: 10 }}>
+                                                                <View style={{ width: 180, height: 120, borderRadius: 8, backgroundColor: '#222', alignItems: 'center', justifyContent: 'center' }}>
+                                                                    <Ionicons name="play-circle" size={48} color="#FF7B6B" />
+                                                                    <ThemedText style={{ color: 'white', marginTop: 4 }}>Ver video</ThemedText>
+                                                                </View>
+                                                            </TouchableOpacity>
+                                                        ) : null
+                                                    ))}
+                                                </ScrollView>
                                             )}
                                             {estadoPasos[idx] === 'Finalizado' && (
                                                 <View style={[styles.estadoBadge, { backgroundColor: '#B6F2C8', alignSelf: 'flex-end', marginTop: 6 }]}>

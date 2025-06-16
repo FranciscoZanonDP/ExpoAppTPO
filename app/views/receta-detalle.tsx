@@ -1,4 +1,4 @@
-import { StyleSheet, View, TouchableOpacity, Image, SafeAreaView, ScrollView, TextInput, Alert } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Image, SafeAreaView, ScrollView, TextInput, Alert, FlatList } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -164,7 +164,7 @@ export default function RecetaDetalleScreen() {
         return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}><ThemedText>Cargando...</ThemedText></View>;
     }
 
-    const imagen = receta.imagen_url ? { uri: receta.imagen_url } : require('../../assets/images/tortadebanana.jpg');
+    const imagenes = Array.isArray(receta.imagenes) && receta.imagenes.length > 0 ? receta.imagenes : [receta.imagen_url];
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
@@ -172,7 +172,16 @@ export default function RecetaDetalleScreen() {
                 <ScrollView style={{ flex: 1, backgroundColor: 'transparent' }} contentContainerStyle={{ paddingBottom: 0, flexGrow: 1 }}>
                     {/* Imagen principal */}
                     <View style={{ alignItems: 'center', position: 'relative' }}>
-                        <Image source={imagen} style={styles.mainImage} />
+                        <FlatList
+                            data={imagenes}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            keyExtractor={(item, idx) => item + idx}
+                            renderItem={({ item }) => (
+                                <Image source={item ? { uri: item } : require('../../assets/images/tortadebanana.jpg')} style={styles.mainImage} />
+                            )}
+                            style={{ maxHeight: 320 }}
+                        />
                         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                             <Ionicons name="arrow-back" size={32} color="white" />
                         </TouchableOpacity>
@@ -191,6 +200,9 @@ export default function RecetaDetalleScreen() {
                         <ThemedText style={styles.authorText}>By {receta.usuario_nombre}</ThemedText>
                         <ThemedText style={styles.titleText}>{receta.nombre}</ThemedText>
                         <ThemedText style={styles.categoryText}>{receta.categoria}</ThemedText>
+                        {receta.descripcion ? (
+                            <ThemedText style={styles.descripcionText}>{receta.descripcion}</ThemedText>
+                        ) : null}
                         <View style={styles.ingredientesHeaderRow}>
                             <ThemedText style={styles.ingredientesTitle}>Ingredientes ({ingredientes?.length || 0})</ThemedText>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -398,5 +410,11 @@ const styles = StyleSheet.create({
         minWidth: 40,
         textAlign: 'center',
         marginRight: 2,
+    },
+    descripcionText: {
+        color: '#444',
+        fontSize: 16,
+        marginBottom: 16,
+        marginTop: 4,
     },
 }); 
