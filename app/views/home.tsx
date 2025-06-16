@@ -232,6 +232,13 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             style={styles.footerTab}
+            onPress={() => router.push('/views/sedes')}
+          >
+            <Ionicons name="location" size={24} color="#AAAAAA" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.footerTab}
             onPress={() => handleTabPress('profile')}
           >
             <Ionicons name="person" size={24} color="#AAAAAA" />

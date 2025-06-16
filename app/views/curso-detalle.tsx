@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
@@ -15,10 +16,34 @@ const cursos = {
         precio: '$35.000',
         modalidad: 'Virtual',
         horario: 'Mie-22hs',
-        descripcion: 'inicio: 10-07-25 | finalización: 11-09-25\n1 clase semanal\nAlumnos debe traer sus insumos y utensillos',
+        descripcion_breve: 'Curso para aprender las bases de la pastelería.',
+        descripcion_completa: 'inicio: 10-07-25 | finalización: 11-09-25\n1 clase semanal\nAlumnos debe traer sus insumos y utensillos. Aprenderás técnicas de masas, batidos y decoración profesional.',
         objetivo: 'Dominar las técnicas fundamentales de pastelería, desde la elaboración de masas y batidos básicos hasta la decoración profesional.',
         temario: 'Ingredientes y utensillos básicos - Masas quebradas - Técnicas de horneado - Rellenos y coberturas - Fundamentos de la decoración',
+        practicas: 'Elaboración de tartas, bizcochuelos y decoración de tortas.',
         recomendaciones: 'Tener recipientes de distintos tamaños',
+        requisitos: 'Batidora, bowls, espátula',
+        provee_insumos: 'alumno',
+        sedes: [
+            {
+                nombre: 'Sede Centro',
+                direccion: 'Av. Principal 123',
+                telefono: '011-1234-5678',
+                horarios: 'Miércoles 22hs',
+                modalidad: 'Presencial',
+                arancel: '$35.000',
+                promociones: '10% de descuento pagando en efectivo',
+            },
+            {
+                nombre: 'Sede Norte',
+                direccion: 'Calle Falsa 456',
+                telefono: '011-8765-4321',
+                horarios: 'Jueves 20hs',
+                modalidad: 'Virtual',
+                arancel: '$32.000',
+                promociones: '2x1 para alumnos nuevos',
+            },
+        ],
         imagen: require('../../assets/images/curso_panaderia.jpeg'),
     },
     curso2: {
@@ -27,10 +52,25 @@ const cursos = {
         precio: '$30.000',
         modalidad: 'Virtual',
         horario: 'Jue-20hs',
-        descripcion: 'inicio: 15-08-25 | finalización: 15-10-25\n1 clase semanal\nAlumnos debe traer sus insumos y utensillos',
+        descripcion_breve: 'Aprende a hacer pastas caseras y salsas tradicionales.',
+        descripcion_completa: 'inicio: 15-08-25 | finalización: 15-10-25\n1 clase semanal\nAlumnos debe traer sus insumos y utensillos. Aprende técnicas de amasado, salsas y rellenos.',
         objetivo: 'Aprender a hacer pastas caseras y salsas tradicionales.',
         temario: 'Harinas - Técnicas de amasado - Salsas clásicas - Rellenos - Presentación',
+        practicas: 'Preparación de pastas frescas y salsas.',
         recomendaciones: 'Tener palo de amasar y cuchillo afilado',
+        requisitos: 'Harina, huevos, cuchillo',
+        provee_insumos: 'alumno',
+        sedes: [
+            {
+                nombre: 'Sede Centro',
+                direccion: 'Av. Principal 123',
+                telefono: '011-1234-5678',
+                horarios: 'Jueves 20hs',
+                modalidad: 'Presencial',
+                arancel: '$30.000',
+                promociones: '10% de descuento pagando en efectivo',
+            },
+        ],
         imagen: require('../../assets/images/curso_pastas.jpg'),
     },
     curso3: {
@@ -39,10 +79,25 @@ const cursos = {
         precio: '$28.000',
         modalidad: 'Virtual',
         horario: 'Vie-18hs',
-        descripcion: 'inicio: 01-09-25 | finalización: 01-11-25\n1 clase semanal\nAlumnos debe traer sus insumos y utensillos',
+        descripcion_breve: 'Cocina platos saludables y equilibrados.',
+        descripcion_completa: 'inicio: 01-09-25 | finalización: 01-11-25\n1 clase semanal\nAlumnos debe traer sus insumos y utensillos. Aprende técnicas de cocción saludable y menús balanceados.',
         objetivo: 'Cocinar platos saludables y equilibrados para toda la familia.',
         temario: 'Verduras - Técnicas de cocción saludable - Menús balanceados - Snacks saludables',
+        practicas: 'Preparación de menús saludables y snacks.',
         recomendaciones: 'Tener procesadora o licuadora',
+        requisitos: 'Verduras frescas, procesadora',
+        provee_insumos: 'alumno',
+        sedes: [
+            {
+                nombre: 'Sede Norte',
+                direccion: 'Calle Falsa 456',
+                telefono: '011-8765-4321',
+                horarios: 'Viernes 18hs',
+                modalidad: 'Virtual',
+                arancel: '$28.000',
+                promociones: 'Descuento 15% para grupos',
+            },
+        ],
         imagen: require('../../assets/images/curso_saludable.jpg'),
     },
 };
@@ -52,10 +107,19 @@ export default function CursoDetalleScreen() {
     const router = useRouter();
     const curso = cursos[id as keyof typeof cursos];
     const [isLogged, setIsLogged] = useState<boolean | null>(null);
+    const [tipoUsuario, setTipoUsuario] = useState<'visitante' | 'alumno' | null>(null);
 
     useEffect(() => {
         AsyncStorage.getItem('usuario').then((usuario) => {
-            setIsLogged(!!usuario);
+            if (!usuario) setTipoUsuario('visitante');
+            else {
+                try {
+                    const user = JSON.parse(usuario);
+                    setTipoUsuario(user.userType === 'Alumno' ? 'alumno' : 'visitante');
+                } catch {
+                    setTipoUsuario('visitante');
+                }
+            }
         });
     }, []);
 
@@ -92,32 +156,54 @@ export default function CursoDetalleScreen() {
                     <Text style={styles.headerSubtitle}>Hecho por: {curso.autor}</Text>
                 </View>
             </View>
-            {/* Chips */}
-            <View style={styles.chipsContainer}>
-                <View style={styles.chip}><Text style={styles.chipText}>{curso.precio}</Text></View>
-                <View style={styles.chip}><Text style={styles.chipText}>{curso.modalidad}</Text></View>
-                <View style={styles.chip}><Text style={styles.chipText}>{curso.horario}</Text></View>
-            </View>
             {/* Info scrollable */}
             <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 30 }}>
                 <View style={styles.infoSection}>
                     <Text style={styles.infoTitle}>Descripción</Text>
-                    <Text style={styles.infoText}>{curso.descripcion}</Text>
+                    <Text style={styles.infoText}>{tipoUsuario === 'visitante' ? curso.descripcion_breve : curso.descripcion_completa}</Text>
                 </View>
-                <View style={styles.infoSection}>
-                    <Text style={styles.infoTitle}>Objetivo</Text>
-                    <Text style={styles.infoText}>{curso.objetivo}</Text>
-                </View>
-                <View style={styles.infoSection}>
-                    <Text style={styles.infoTitle}>Temario</Text>
-                    <Text style={styles.infoText}>{curso.temario}</Text>
-                </View>
-                <View style={[styles.infoSection, styles.recomendSection]}>
-                    <Text style={[styles.infoTitle, { color: '#D14B4B' }]}>Recomendaciones</Text>
-                    <Text style={[styles.infoText, { color: '#222' }]}>{curso.recomendaciones}</Text>
-                </View>
+                {tipoUsuario === 'alumno' && (
+                    <>
+                        <View style={styles.infoSection}>
+                            <Text style={styles.infoTitle}>Objetivo</Text>
+                            <Text style={styles.infoText}>{curso.objetivo}</Text>
+                        </View>
+                        <View style={styles.infoSection}>
+                            <Text style={styles.infoTitle}>Temario</Text>
+                            <Text style={styles.infoText}>{curso.temario}</Text>
+                        </View>
+                        <View style={styles.infoSection}>
+                            <Text style={styles.infoTitle}>Prácticas</Text>
+                            <Text style={styles.infoText}>{curso.practicas}</Text>
+                        </View>
+                        <View style={styles.infoSection}>
+                            <Text style={styles.infoTitle}>Recomendaciones</Text>
+                            <Text style={styles.infoText}>{curso.recomendaciones}</Text>
+                        </View>
+                        <View style={styles.infoSection}>
+                            <Text style={styles.infoTitle}>Requisitos</Text>
+                            <Text style={styles.infoText}>{curso.requisitos}</Text>
+                            <Text style={styles.infoText}>Insumos provistos por: {curso.provee_insumos === 'empresa' ? 'La empresa' : 'El alumno'}</Text>
+                        </View>
+                        {/* Sedes */}
+                        <View style={styles.infoSection}>
+                            <Text style={styles.infoTitle}>Sedes disponibles</Text>
+                            {curso.sedes?.map((sede, idx) => (
+                                <View key={idx} style={{ marginBottom: 10, backgroundColor: '#FFF6F0', borderRadius: 10, padding: 10 }}>
+                                    <Text style={{ fontWeight: 'bold', color: '#D14B4B' }}>{sede.nombre}</Text>
+                                    <Text style={{ color: '#222' }}>Dirección: {sede.direccion}</Text>
+                                    <Text style={{ color: '#222' }}>Teléfono: {sede.telefono}</Text>
+                                    <Text style={{ color: '#222' }}>Horarios: {sede.horarios}</Text>
+                                    <Text style={{ color: '#222' }}>Modalidad: {sede.modalidad}</Text>
+                                    <Text style={{ color: '#222' }}>Arancel: {sede.arancel}</Text>
+                                    <Text style={{ color: '#D14B4B' }}>Promociones: {sede.promociones}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </>
+                )}
                 {/* Botón inscribirse o atrás */}
-                {isLogged === false ? (
+                {tipoUsuario !== 'alumno' ? (
                     <TouchableOpacity style={styles.inscribirseBtn} onPress={() => router.replace('/views/home')}>
                         <Text style={styles.inscribirseBtnText}>Atrás</Text>
                     </TouchableOpacity>
@@ -212,33 +298,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         textAlign: 'center',
         fontWeight: '400',
-    },
-    chipsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 12,
-        marginTop: -38,
-        marginBottom: 10,
-        zIndex: 20,
-    },
-    chip: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        paddingHorizontal: 18,
-        paddingVertical: 6,
-        marginHorizontal: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.08,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    chipText: {
-        color: '#FF7B6B',
-        fontWeight: 'bold',
-        fontSize: 16,
-        textAlign: 'center',
     },
     infoSection: {
         backgroundColor: '#F6F6F6',
