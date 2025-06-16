@@ -1,10 +1,11 @@
 import React from 'react';
-import { StyleSheet, View, SafeAreaView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, SafeAreaView, TouchableOpacity, TextInput, Alert, ActivityIndicator, ScrollView, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 
 type RegistroBody = {
     nombre: string | string[];
@@ -127,6 +128,22 @@ export default function VerificationScreen() {
         }
     };
 
+    const handlePickImage = async (setter: (uri: string) => void) => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permiso requerido', 'Se necesita permiso para acceder a la galería de fotos.');
+            return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 0.7,
+        });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            setter(result.assets[0].uri);
+        }
+    };
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
@@ -143,7 +160,7 @@ export default function VerificationScreen() {
                 </View>
                 {/* Parte inferior con fondo blanco */}
                 <View style={styles.bottomSection}>
-                    <View style={styles.formContainer}>
+                    <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
                         {etapa === 'codigo' ? (
                             <>
                                 <ThemedText style={styles.verificationText}>
@@ -230,24 +247,18 @@ export default function VerificationScreen() {
                                             />
                                         </View>
                                         <View style={styles.inputContainer}>
-                                            <ThemedText style={styles.inputLabel}>Foto DNI frente (URL)</ThemedText>
-                                            <TextInput
-                                                style={styles.input}
-                                                placeholder="URL de la foto frente"
-                                                placeholderTextColor="#999"
-                                                value={fotoDniFrente}
-                                                onChangeText={setFotoDniFrente}
-                                            />
+                                            <ThemedText style={styles.inputLabel}>Foto DNI frente</ThemedText>
+                                            <TouchableOpacity style={styles.imagePickerButton} onPress={() => handlePickImage(setFotoDniFrente)}>
+                                                <ThemedText style={styles.imagePickerText}>{fotoDniFrente ? 'Cambiar foto' : 'Seleccionar foto'}</ThemedText>
+                                            </TouchableOpacity>
+                                            {fotoDniFrente ? <Image source={{ uri: fotoDniFrente }} style={styles.dniImage} /> : null}
                                         </View>
                                         <View style={styles.inputContainer}>
-                                            <ThemedText style={styles.inputLabel}>Foto DNI dorso (URL)</ThemedText>
-                                            <TextInput
-                                                style={styles.input}
-                                                placeholder="URL de la foto dorso"
-                                                placeholderTextColor="#999"
-                                                value={fotoDniDorso}
-                                                onChangeText={setFotoDniDorso}
-                                            />
+                                            <ThemedText style={styles.inputLabel}>Foto DNI dorso</ThemedText>
+                                            <TouchableOpacity style={styles.imagePickerButton} onPress={() => handlePickImage(setFotoDniDorso)}>
+                                                <ThemedText style={styles.imagePickerText}>{fotoDniDorso ? 'Cambiar foto' : 'Seleccionar foto'}</ThemedText>
+                                            </TouchableOpacity>
+                                            {fotoDniDorso ? <Image source={{ uri: fotoDniDorso }} style={styles.dniImage} /> : null}
                                         </View>
                                         <View style={styles.inputContainer}>
                                             <ThemedText style={styles.inputLabel}>Número de trámite del DNI</ThemedText>
@@ -271,7 +282,7 @@ export default function VerificationScreen() {
                                 </TouchableOpacity>
                             </>
                         )}
-                    </View>
+                    </ScrollView>
                 </View>
             </View>
         </SafeAreaView>
@@ -395,5 +406,24 @@ const styles = StyleSheet.create({
     dropdownText: {
         color: '#333',
         fontSize: 18,
+    },
+    imagePickerButton: {
+        backgroundColor: '#E0E0E0',
+        borderRadius: 8,
+        padding: 10,
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    imagePickerText: {
+        color: '#333',
+        fontSize: 16,
+    },
+    dniImage: {
+        width: 180,
+        height: 120,
+        borderRadius: 8,
+        marginTop: 5,
+        marginBottom: 10,
+        alignSelf: 'center',
     },
 }); 
