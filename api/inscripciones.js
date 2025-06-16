@@ -40,11 +40,11 @@ module.exports = async (req, res) => {
             let curso = {};
             let sedeInfo = {};
             try {
-                const cursos = require('../app/views/curso-detalle.tsx').cursos || {};
+                const cursos = require('./cursos.json');
                 curso = cursos[curso_id] || {};
                 sedeInfo = curso.sedes?.find(s => s.nombre === sede) || {};
             } catch (e) {
-                console.log('[inscripciones] Error obteniendo datos mock de curso:', e);
+                console.log('[inscripciones] Error obteniendo datos de curso desde cursos.json:', e);
             }
             // Insertar inscripción con datos completos
             const result = await client.query(
@@ -73,8 +73,8 @@ module.exports = async (req, res) => {
                 await transporter.sendMail({
                     from: 'Cookit <panchizanon@gmail.com>',
                     to: usuario_email,
-                    subject: 'Confirmación de inscripción - ' + (curso.titulo || 'Curso'),
-                    text: `¡Inscripción exitosa!\n\nCurso: ${curso.titulo || curso_id}\nSede: ${sede}\nHorario: ${curso.horario || '-'}\nPrecio: ${curso.precio || '-'}\nRequisitos: ${curso.requisitos || '-'}\n\nFactura: Inscripción N° ${result.rows[0].id}\n\n¡Gracias por inscribirte en Cookit!`
+                    subject: 'Confirmación de inscripción - ' + (curso.titulo || curso_id),
+                    text: `¡Inscripción exitosa!\n\nCurso: ${curso.titulo || curso_id}\nSede: ${sedeInfo?.nombre || sede}\nDirección: ${sedeInfo?.direccion || '-'}\nTeléfono: ${sedeInfo?.telefono || '-'}\nHorario: ${sedeInfo?.horarios || '-'}\nModalidad: ${sedeInfo?.modalidad || '-'}\nArancel: ${sedeInfo?.arancel || '-'}\nPromociones: ${sedeInfo?.promociones || '-'}\nRequisitos: ${curso.requisitos || '-'}\n\nFactura: Inscripción N° ${result.rows[0].id}\n\n¡Gracias por inscribirte en Cookit!`
                 });
                 console.log('[inscripciones] Email enviado a', usuario_email);
             } catch (e) {

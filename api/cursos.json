@@ -1,0 +1,59 @@
+{
+  "curso1": {
+    "titulo": "Pastelería Básica",
+    "autor": "Zanon",
+    "requisitos": "Batidora, bowls, espátula",
+    "sedes": [
+      {
+        "nombre": "Sede Centro",
+        "direccion": "Av. Principal 123",
+        "telefono": "011-1234-5678",
+        "horarios": "Miércoles 22hs",
+        "modalidad": "Presencial",
+        "arancel": "$35.000",
+        "promociones": "10% de descuento pagando en efectivo"
+      },
+      {
+        "nombre": "Sede Norte",
+        "direccion": "Calle Falsa 456",
+        "telefono": "011-8765-4321",
+        "horarios": "Jueves 20hs",
+        "modalidad": "Virtual",
+        "arancel": "$32.000",
+        "promociones": "2x1 para alumnos nuevos"
+      }
+    ]
+  },
+  "curso2": {
+    "titulo": "Curso de Pastas",
+    "autor": "Zanon",
+    "requisitos": "Harina, huevos, cuchillo",
+    "sedes": [
+      {
+        "nombre": "Sede Centro",
+        "direccion": "Av. Principal 123",
+        "telefono": "011-1234-5678",
+        "horarios": "Jueves 20hs",
+        "modalidad": "Presencial",
+        "arancel": "$30.000",
+        "promociones": "10% de descuento pagando en efectivo"
+      }
+    ]
+  },
+  "curso3": {
+    "titulo": "Curso de Cocina Saludable",
+    "autor": "Zanon",
+    "requisitos": "Verduras frescas, procesadora",
+    "sedes": [
+      {
+        "nombre": "Sede Norte",
+        "direccion": "Calle Falsa 456",
+        "telefono": "011-8765-4321",
+        "horarios": "Viernes 18hs",
+        "modalidad": "Virtual",
+        "arancel": "$28.000",
+        "promociones": "Descuento 15% para grupos"
+      }
+    ]
+  }
+} 
