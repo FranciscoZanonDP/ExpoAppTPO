@@ -1,4 +1,7 @@
-const pool = require('./db');
+const { Pool } = require('pg');
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+});
 const nodemailer = require('nodemailer');
 
 const MAX_VACANTES = 30; // Puedes ajustar este valor

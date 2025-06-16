@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const cursos = {
     curso1: {
@@ -29,7 +29,12 @@ export default function PagoCursoScreen() {
     const router = useRouter();
     const { id, sede } = useLocalSearchParams();
     const curso = cursos[id as keyof typeof cursos];
-    const tarjeta = '******** 4512';
+    // Estados para los inputs
+    const [tarjeta, setTarjeta] = useState('');
+    const [cvv, setCvv] = useState('');
+    const [vencimiento, setVencimiento] = useState('');
+    const [titular, setTitular] = useState('');
+    const [cuotas, setCuotas] = useState('1');
     const precio = curso?.precio || '$--';
 
     useEffect(() => {
@@ -40,6 +45,11 @@ export default function PagoCursoScreen() {
     }, [sede]);
 
     const handlePagar = async () => {
+        // Validación simple
+        if (!tarjeta || !cvv || !vencimiento || !titular || !cuotas) {
+            alert('Por favor completá todos los campos.');
+            return;
+        }
         try {
             const usuarioStr = await AsyncStorage.getItem('usuario');
             if (!usuarioStr) {
@@ -70,6 +80,10 @@ export default function PagoCursoScreen() {
 
     return (
         <View style={{ flex: 1, backgroundColor: '#fff' }}>
+            {/* Botón volver */}
+            <TouchableOpacity style={{ position: 'absolute', top: 40, left: 18, zIndex: 20, backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 20, padding: 6 }} onPress={() => router.replace({ pathname: '/views/curso-detalle', params: { id } })}>
+                <Ionicons name="arrow-back" size={28} color="#FF7B6B" />
+            </TouchableOpacity>
             {/* Header con imagen y overlay */}
             <View style={styles.headerImageContainer}>
                 <Image source={curso?.imagen} style={styles.headerImage} />
@@ -81,35 +95,60 @@ export default function PagoCursoScreen() {
             </View>
             {/* Card de pago */}
             <View style={styles.pagoContainer}>
-                <TouchableOpacity style={styles.inscribiteBtn}>
-                    <Text style={styles.inscribiteBtnText}>Inscribite</Text>
-                </TouchableOpacity>
                 <ScrollView contentContainerStyle={{ paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
-                    <Text style={styles.label}>Seleccionar tarjeta</Text>
-                    <View style={styles.inputRow}>
-                        <Text style={styles.inputText}>{tarjeta}</Text>
-                        <Ionicons name="chevron-down" size={22} color="#FF7B6B" />
-                    </View>
+                    <Text style={styles.label}>Número de tarjeta</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Ej: 1234 5678 9012 3456"
+                        placeholderTextColor="#bbb"
+                        keyboardType="numeric"
+                        maxLength={19}
+                        value={tarjeta}
+                        onChangeText={setTarjeta}
+                    />
                     <View style={styles.inputRow}>
                         <View style={{ flex: 1, marginRight: 8 }}>
                             <Text style={styles.label}>CVV</Text>
-                            <TextInput style={styles.input} placeholder="cvv" placeholderTextColor="#bbb" keyboardType="numeric" maxLength={4} />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="cvv"
+                                placeholderTextColor="#bbb"
+                                keyboardType="numeric"
+                                maxLength={4}
+                                value={cvv}
+                                onChangeText={setCvv}
+                            />
                         </View>
                         <View style={{ flex: 1 }}>
                             <Text style={styles.label}>Vencimiento</Text>
-                            <TextInput style={styles.input} placeholder="mm/yy" placeholderTextColor="#bbb" />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="mm/yy"
+                                placeholderTextColor="#bbb"
+                                value={vencimiento}
+                                onChangeText={setVencimiento}
+                            />
                         </View>
                     </View>
                     <Text style={styles.label}>Titular</Text>
-                    <TextInput style={styles.input} placeholder="Nombre del titular" placeholderTextColor="#bbb" />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Nombre del titular"
+                        placeholderTextColor="#bbb"
+                        value={titular}
+                        onChangeText={setTitular}
+                    />
                     <Text style={styles.label}>Cantidad de pagos</Text>
-                    <View style={styles.inputRow}>
-                        <Text style={[styles.inputText, { color: '#bbb' }]}>1 pago de {precio}</Text>
-                        <Ionicons name="chevron-down" size={22} color="#FF7B6B" />
-                    </View>
-                    <TouchableOpacity style={styles.efectivoBtn}>
-                        <Text style={styles.efectivoBtnText}>Pagar en efectivo/qr</Text>
-                    </TouchableOpacity>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Ej: 1"
+                        placeholderTextColor="#bbb"
+                        keyboardType="numeric"
+                        value={cuotas}
+                        onChangeText={setCuotas}
+                    />
+                    <Text style={[styles.label, { marginTop: 16 }]}>Total a pagar</Text>
+                    <Text style={{ fontSize: 18, color: '#222', marginBottom: 16 }}>{precio}</Text>
                     <TouchableOpacity style={styles.pagarBtn} onPress={handlePagar}>
                         <Text style={styles.pagarBtnText}>Pagar</Text>
                     </TouchableOpacity>
