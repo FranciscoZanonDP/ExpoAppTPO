@@ -1,45 +1,64 @@
-import { StyleSheet, View, SafeAreaView, TextInput, TouchableOpacity, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { StyleSheet, View, SafeAreaView, TextInput, TouchableOpacity, TouchableWithoutFeedback, Keyboard, Alert, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function RegisterScreen() {
     const router = useRouter();
     const [nombre, setNombre] = useState('');
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [passwordVisible, setPasswordVisible] = useState(false);
-    const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
-    const [userType, setUserType] = useState('Usuario');
-    const [dropdownVisible, setDropdownVisible] = useState(false);
-
-    // Limpiar campos cada vez que se entra a la pantalla
-    useFocusEffect(
-        useCallback(() => {
-            setNombre('');
-            setEmail('');
-            setPassword('');
-            setConfirmPassword('');
-            setUserType('Usuario');
-        }, [])
-    );
+    const [loading, setLoading] = useState(false);
+    const [sugerencias, setSugerencias] = useState<string[]>([]);
 
     const handleRegister = async () => {
-        if (!nombre || !email || !password || !confirmPassword) {
-            alert('Por favor completa todos los campos.');
+        if (!nombre || !email) {
+            Alert.alert('Por favor completa todos los campos.');
             return;
         }
-        if (password !== confirmPassword) {
-            alert('Las contraseñas no coinciden.');
-            return;
+        setLoading(true);
+        setSugerencias([]);
+        try {
+            // Verificar email y alias únicos
+            const res = await fetch('https://expo-app-tpo.vercel.app/api/verificar-usuario', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, alias: nombre })
+            });
+            const data = await res.json();
+            if (data.emailOcupado) {
+                Alert.alert('El email ya está registrado.');
+                setLoading(false);
+                return;
+            }
+            if (data.aliasOcupado) {
+                setSugerencias(data.sugerencias || []);
+                Alert.alert('El alias ya está en uso. Prueba con otro.');
+                setLoading(false);
+                return;
+            }
+            // Enviar código de verificación
+            const res2 = await fetch('https://expo-app-tpo.vercel.app/api/enviar-codigo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data2 = await res2.json();
+            if (!data2.enviado) {
+                Alert.alert('No se pudo enviar el código. Intenta más tarde.');
+                setLoading(false);
+                return;
+            }
+            // Navegar a verificación
+            router.push({
+                pathname: '/views/verification',
+                params: { nombre, email }
+            });
+        } catch (err) {
+            Alert.alert('Error de red: ' + String(err));
+        } finally {
+            setLoading(false);
         }
-        // Solo navegar a verificación, sin fetch
-        router.push({
-            pathname: '/views/verification',
-            params: { nombre, email, password, userType }
-        });
     };
 
     const handleLogin = () => {
@@ -77,10 +96,10 @@ export default function RegisterScreen() {
                         {/* Formulario */}
                         <View style={styles.formContainer}>
                             <View style={styles.inputContainer}>
-                                <ThemedText style={styles.inputLabel}>Nombre</ThemedText>
+                                <ThemedText style={styles.inputLabel}>Alias</ThemedText>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="cookit"
+                                    placeholder="Tu alias"
                                     placeholderTextColor="#999"
                                     value={nombre}
                                     onChangeText={setNombre}
@@ -92,7 +111,7 @@ export default function RegisterScreen() {
                                 <ThemedText style={styles.inputLabel}>Email</ThemedText>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="cookit@cookit.com"
+                                    placeholder="tu@email.com"
                                     placeholderTextColor="#999"
                                     value={email}
                                     onChangeText={setEmail}
@@ -101,79 +120,23 @@ export default function RegisterScreen() {
                                 />
                             </View>
 
-                            <View style={styles.inputContainer}>
-                                <ThemedText style={styles.inputLabel}>Contraseña</ThemedText>
-                                <View style={styles.passwordContainer}>
-                                    <TextInput
-                                        style={styles.passwordInput}
-                                        placeholder="••••••••••"
-                                        placeholderTextColor="#999"
-                                        value={password}
-                                        onChangeText={setPassword}
-                                        secureTextEntry={!passwordVisible}
-                                        autoCapitalize="none"
-                                    />
-                                    <TouchableOpacity
-                                        onPress={() => setPasswordVisible(!passwordVisible)}
-                                        style={styles.eyeIcon}
-                                    >
-                                        <Ionicons
-                                            name={passwordVisible ? "eye-off-outline" : "eye-outline"}
-                                            size={20}
-                                            color="#4CAF50"
-                                        />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-
-                            <View style={styles.inputContainer}>
-                                <ThemedText style={styles.inputLabel}>Repetir contraseña</ThemedText>
-                                <View style={styles.passwordContainer}>
-                                    <TextInput
-                                        style={styles.passwordInput}
-                                        placeholder="••••••••••"
-                                        placeholderTextColor="#999"
-                                        value={confirmPassword}
-                                        onChangeText={setConfirmPassword}
-                                        secureTextEntry={!confirmPasswordVisible}
-                                        autoCapitalize="none"
-                                    />
-                                    <TouchableOpacity
-                                        onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
-                                        style={styles.eyeIcon}
-                                    >
-                                        <Ionicons
-                                            name={confirmPasswordVisible ? "eye-off-outline" : "eye-outline"}
-                                            size={20}
-                                            color="#4CAF50"
-                                        />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-
-                            <View style={styles.inputContainer}>
-                                <ThemedText style={styles.inputLabel}>Tipo de usuario</ThemedText>
-                                <TouchableOpacity style={styles.dropdownContainer} onPress={() => setDropdownVisible(!dropdownVisible)}>
-                                    <ThemedText style={styles.dropdownText}>{userType}</ThemedText>
-                                    <Ionicons name={dropdownVisible ? 'chevron-up-outline' : 'chevron-down-outline'} size={20} color="#999" />
-                                </TouchableOpacity>
-                                {dropdownVisible && (
-                                    <View style={{ backgroundColor: '#fff', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 5, marginTop: 5 }}>
-                                        <TouchableOpacity onPress={() => { setUserType('Usuario'); setDropdownVisible(false); }} style={{ padding: 10 }}>
-                                            <ThemedText style={{ color: userType === 'Usuario' ? '#FF7B6B' : '#333' }}>Usuario</ThemedText>
+                            {sugerencias.length > 0 && (
+                                <View style={{ marginBottom: 10 }}>
+                                    <ThemedText style={{ color: '#FF7B6B', marginBottom: 5 }}>Sugerencias de alias:</ThemedText>
+                                    {sugerencias.map((s, i) => (
+                                        <TouchableOpacity key={i} onPress={() => setNombre(s)}>
+                                            <ThemedText style={{ color: '#333', marginBottom: 2 }}>{s}</ThemedText>
                                         </TouchableOpacity>
-                                        <TouchableOpacity onPress={() => { setUserType('Alumno'); setDropdownVisible(false); }} style={{ padding: 10 }}>
-                                            <ThemedText style={{ color: userType === 'Alumno' ? '#FF7B6B' : '#333' }}>Alumno</ThemedText>
-                                        </TouchableOpacity>
-                                    </View>
-                                )}
-                            </View>
+                                    ))}
+                                </View>
+                            )}
 
                             <TouchableOpacity
                                 style={styles.registerButton}
                                 onPress={handleRegister}
+                                disabled={loading}
                             >
-                                <ThemedText style={styles.registerButtonText}>Registrarse</ThemedText>
+                                {loading ? <ActivityIndicator color="#fff" /> : <ThemedText style={styles.registerButtonText}>Siguiente</ThemedText>}
                             </TouchableOpacity>
 
                             <View style={styles.loginContainer}>
@@ -252,33 +215,6 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         fontSize: 16,
         color: '#333',
-    },
-    passwordContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
-    },
-    passwordInput: {
-        flex: 1,
-        paddingVertical: 10,
-        fontSize: 16,
-        color: '#333',
-    },
-    eyeIcon: {
-        padding: 10,
-    },
-    dropdownContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
-        paddingVertical: 10,
-    },
-    dropdownText: {
-        fontSize: 16,
-        color: '#999',
     },
     registerButton: {
         backgroundColor: '#FF7B6B',
