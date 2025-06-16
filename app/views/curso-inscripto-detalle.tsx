@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
@@ -11,6 +11,33 @@ const cursos = {
         horario: 'Mie-22hs',
         precio: '$35.000',
         descripcion: 'Curso completo de pastelería básica, aprende desde cero.',
+        descripcion_completa: 'inicio: 10-07-25 | finalización: 11-09-25\n1 clase semanal\nAlumnos debe traer sus insumos y utensillos. Aprenderás técnicas de masas, batidos y decoración profesional.',
+        objetivo: 'Dominar las técnicas fundamentales de pastelería, desde la elaboración de masas y batidos básicos hasta la decoración profesional.',
+        temario: 'Ingredientes y utensillos básicos - Masas quebradas - Técnicas de horneado - Rellenos y coberturas - Fundamentos de la decoración',
+        practicas: 'Elaboración de tartas, bizcochuelos y decoración de tortas.',
+        recomendaciones: 'Tener recipientes de distintos tamaños',
+        requisitos: 'Batidora, bowls, espátula',
+        provee_insumos: 'alumno',
+        sedes: [
+            {
+                nombre: 'Sede Centro',
+                direccion: 'Av. Principal 123',
+                telefono: '011-1234-5678',
+                horarios: 'Miércoles 22hs',
+                modalidad: 'Presencial',
+                arancel: '$35.000',
+                promociones: '10% de descuento pagando en efectivo',
+            },
+            {
+                nombre: 'Sede Norte',
+                direccion: 'Calle Falsa 456',
+                telefono: '011-8765-4321',
+                horarios: 'Jueves 20hs',
+                modalidad: 'Virtual',
+                arancel: '$32.000',
+                promociones: '2x1 para alumnos nuevos',
+            },
+        ],
     },
     curso2: {
         titulo: 'Curso de Pastas',
@@ -19,6 +46,24 @@ const cursos = {
         horario: 'Jue-20hs',
         precio: '$30.000',
         descripcion: 'Descubre los secretos de la pasta casera y sus salsas.',
+        descripcion_completa: 'inicio: 15-08-25 | finalización: 15-10-25\n1 clase semanal\nAlumnos debe traer sus insumos y utensillos. Aprende técnicas de amasado, salsas y rellenos.',
+        objetivo: 'Aprender a hacer pastas caseras y salsas tradicionales.',
+        temario: 'Harinas - Técnicas de amasado - Salsas clásicas - Rellenos - Presentación',
+        practicas: 'Preparación de pastas frescas y salsas.',
+        recomendaciones: 'Tener palo de amasar y cuchillo afilado',
+        requisitos: 'Harina, huevos, cuchillo',
+        provee_insumos: 'alumno',
+        sedes: [
+            {
+                nombre: 'Sede Centro',
+                direccion: 'Av. Principal 123',
+                telefono: '011-1234-5678',
+                horarios: 'Jueves 20hs',
+                modalidad: 'Presencial',
+                arancel: '$30.000',
+                promociones: '10% de descuento pagando en efectivo',
+            },
+        ],
     },
     curso3: {
         titulo: 'Curso de Cocina Saludable',
@@ -27,13 +72,32 @@ const cursos = {
         horario: 'Vie-18hs',
         precio: '$28.000',
         descripcion: 'Cocina platos ricos y saludables para toda la familia.',
+        descripcion_completa: 'inicio: 01-09-25 | finalización: 01-11-25\n1 clase semanal\nAlumnos debe traer sus insumos y utensillos. Aprende técnicas de cocción saludable y menús balanceados.',
+        objetivo: 'Cocinar platos saludables y equilibrados para toda la familia.',
+        temario: 'Verduras - Técnicas de cocción saludable - Menús balanceados - Snacks saludables',
+        practicas: 'Preparación de menús saludables y snacks.',
+        recomendaciones: 'Tener procesadora o licuadora',
+        requisitos: 'Verduras frescas, procesadora',
+        provee_insumos: 'alumno',
+        sedes: [
+            {
+                nombre: 'Sede Norte',
+                direccion: 'Calle Falsa 456',
+                telefono: '011-8765-4321',
+                horarios: 'Viernes 18hs',
+                modalidad: 'Virtual',
+                arancel: '$28.000',
+                promociones: 'Descuento 15% para grupos',
+            },
+        ],
     },
 };
 
 export default function CursoInscriptoDetalleScreen() {
     const router = useRouter();
-    const { id } = useLocalSearchParams();
+    const { id, sede } = useLocalSearchParams();
     const curso = cursos[id as keyof typeof cursos];
+    const sedeInfo = curso?.sedes?.find(s => s.nombre === sede);
 
     if (!curso) {
         return (
@@ -56,14 +120,38 @@ export default function CursoInscriptoDetalleScreen() {
                     <Text style={styles.headerSubtitle}>Hecho por: {curso.autor}</Text>
                 </View>
             </View>
-            <View style={styles.infoContainer}>
-                <Text style={styles.infoLabel}>Horario:</Text>
-                <Text style={styles.infoValue}>{curso.horario}</Text>
-                <Text style={styles.infoLabel}>Precio:</Text>
-                <Text style={styles.infoValue}>{curso.precio}</Text>
-                <Text style={styles.infoLabel}>Descripción:</Text>
-                <Text style={styles.infoValue}>{curso.descripcion}</Text>
-            </View>
+            <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+                <View style={styles.infoContainer}>
+                    <Text style={styles.infoLabel}>Sede:</Text>
+                    <Text style={styles.infoValue}>{sedeInfo?.nombre || '-'}</Text>
+                    <Text style={styles.infoLabel}>Dirección:</Text>
+                    <Text style={styles.infoValue}>{sedeInfo?.direccion || '-'}</Text>
+                    <Text style={styles.infoLabel}>Teléfono:</Text>
+                    <Text style={styles.infoValue}>{sedeInfo?.telefono || '-'}</Text>
+                    <Text style={styles.infoLabel}>Horario:</Text>
+                    <Text style={styles.infoValue}>{sedeInfo?.horarios || curso.horario || '-'}</Text>
+                    <Text style={styles.infoLabel}>Modalidad:</Text>
+                    <Text style={styles.infoValue}>{sedeInfo?.modalidad || '-'}</Text>
+                    <Text style={styles.infoLabel}>Arancel:</Text>
+                    <Text style={styles.infoValue}>{sedeInfo?.arancel || curso.precio || '-'}</Text>
+                    <Text style={styles.infoLabel}>Promociones:</Text>
+                    <Text style={styles.infoValue}>{sedeInfo?.promociones || '-'}</Text>
+                    <Text style={styles.infoLabel}>Requisitos:</Text>
+                    <Text style={styles.infoValue}>{curso.requisitos || '-'}</Text>
+                    <Text style={styles.infoLabel}>Descripción:</Text>
+                    <Text style={styles.infoValue}>{curso.descripcion_completa || curso.descripcion || '-'}</Text>
+                    <Text style={styles.infoLabel}>Objetivo:</Text>
+                    <Text style={styles.infoValue}>{curso.objetivo || '-'}</Text>
+                    <Text style={styles.infoLabel}>Temario:</Text>
+                    <Text style={styles.infoValue}>{curso.temario || '-'}</Text>
+                    <Text style={styles.infoLabel}>Prácticas:</Text>
+                    <Text style={styles.infoValue}>{curso.practicas || '-'}</Text>
+                    <Text style={styles.infoLabel}>Recomendaciones:</Text>
+                    <Text style={styles.infoValue}>{curso.recomendaciones || '-'}</Text>
+                    <Text style={styles.infoLabel}>Insumos provistos por:</Text>
+                    <Text style={styles.infoValue}>{curso.provee_insumos === 'empresa' ? 'La empresa' : 'El alumno'}</Text>
+                </View>
+            </ScrollView>
         </View>
     );
 }
