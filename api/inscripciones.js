@@ -36,20 +36,38 @@ module.exports = async (req, res) => {
                 console.log('[inscripciones] No hay vacantes disponibles');
                 return res.status(409).json({ error: 'No hay vacantes disponibles en esta sede.' });
             }
-            // Insertar inscripción
-            const result = await client.query(
-                'INSERT INTO inscripciones (usuario_email, curso_id, sede) VALUES ($1, $2, $3) RETURNING id',
-                [usuario_email, curso_id, sede]
-            );
-            console.log('[inscripciones] Inscripción creada, id:', result.rows[0].id);
             // Traer datos del curso y requisitos (mock, deberías traer de la DB real)
             let curso = {};
+            let sedeInfo = {};
             try {
                 const cursos = require('../app/views/curso-detalle.tsx').cursos || {};
                 curso = cursos[curso_id] || {};
+                sedeInfo = curso.sedes?.find(s => s.nombre === sede) || {};
             } catch (e) {
                 console.log('[inscripciones] Error obteniendo datos mock de curso:', e);
             }
+            // Insertar inscripción con datos completos
+            const result = await client.query(
+                `INSERT INTO inscripciones (
+                    usuario_email, curso_id, sede, 
+                    curso_titulo, curso_horario, curso_precio, curso_requisitos, 
+                    curso_modalidad, curso_promociones, curso_direccion, curso_telefono
+                ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+                [
+                    usuario_email,
+                    curso_id,
+                    sede,
+                    curso.titulo || '',
+                    sedeInfo.horarios || '',
+                    sedeInfo.arancel || '',
+                    curso.requisitos || '',
+                    sedeInfo.modalidad || '',
+                    sedeInfo.promociones || '',
+                    sedeInfo.direccion || '',
+                    sedeInfo.telefono || ''
+                ]
+            );
+            console.log('[inscripciones] Inscripción creada, id:', result.rows[0].id);
             // Enviar email real
             try {
                 await transporter.sendMail({
