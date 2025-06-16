@@ -6,6 +6,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+type RegistroBody = {
+    nombre: string | string[];
+    email: string | string[];
+    password: string;
+    userType: string;
+    medioPago?: string;
+    fotoDniFrente?: string;
+    fotoDniDorso?: string;
+    numeroTramiteDni?: string;
+};
+
 export default function VerificationScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
@@ -16,6 +27,10 @@ export default function VerificationScreen() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [userType, setUserType] = useState('Usuario');
     const [dropdownVisible, setDropdownVisible] = useState(false);
+    const [medioPago, setMedioPago] = useState('');
+    const [fotoDniFrente, setFotoDniFrente] = useState('');
+    const [fotoDniDorso, setFotoDniDorso] = useState('');
+    const [numeroTramiteDni, setNumeroTramiteDni] = useState('');
 
     const handleBack = () => {
         router.back();
@@ -75,15 +90,22 @@ export default function VerificationScreen() {
         }
         setLoading(true);
         try {
+            const body: RegistroBody = {
+                nombre: params.nombre,
+                email: params.email,
+                password,
+                userType
+            };
+            if (userType === 'Alumno') {
+                body.medioPago = medioPago;
+                body.fotoDniFrente = fotoDniFrente;
+                body.fotoDniDorso = fotoDniDorso;
+                body.numeroTramiteDni = numeroTramiteDni;
+            }
             const response = await fetch('https://expo-app-tpo.vercel.app/api/registrar-usuario', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    nombre: params.nombre,
-                    email: params.email,
-                    password,
-                    userType
-                }),
+                body: JSON.stringify(body),
             });
             const data = await response.json();
             if (!response.ok) {
@@ -194,6 +216,52 @@ export default function VerificationScreen() {
                                         </View>
                                     )}
                                 </View>
+                                {userType === 'Alumno' && (
+                                    <>
+                                        <View style={styles.inputContainer}>
+                                            <ThemedText style={styles.inputLabel}>Medio de pago (tarjeta de crédito)</ThemedText>
+                                            <TextInput
+                                                style={styles.input}
+                                                placeholder="Ej: 4111 1111 1111 1111"
+                                                placeholderTextColor="#999"
+                                                value={medioPago}
+                                                onChangeText={setMedioPago}
+                                                keyboardType="default"
+                                            />
+                                        </View>
+                                        <View style={styles.inputContainer}>
+                                            <ThemedText style={styles.inputLabel}>Foto DNI frente (URL)</ThemedText>
+                                            <TextInput
+                                                style={styles.input}
+                                                placeholder="URL de la foto frente"
+                                                placeholderTextColor="#999"
+                                                value={fotoDniFrente}
+                                                onChangeText={setFotoDniFrente}
+                                            />
+                                        </View>
+                                        <View style={styles.inputContainer}>
+                                            <ThemedText style={styles.inputLabel}>Foto DNI dorso (URL)</ThemedText>
+                                            <TextInput
+                                                style={styles.input}
+                                                placeholder="URL de la foto dorso"
+                                                placeholderTextColor="#999"
+                                                value={fotoDniDorso}
+                                                onChangeText={setFotoDniDorso}
+                                            />
+                                        </View>
+                                        <View style={styles.inputContainer}>
+                                            <ThemedText style={styles.inputLabel}>Número de trámite del DNI</ThemedText>
+                                            <TextInput
+                                                style={styles.input}
+                                                placeholder="Número de trámite"
+                                                placeholderTextColor="#999"
+                                                value={numeroTramiteDni}
+                                                onChangeText={setNumeroTramiteDni}
+                                                keyboardType="default"
+                                            />
+                                        </View>
+                                    </>
+                                )}
                                 <TouchableOpacity
                                     style={styles.emailButton}
                                     onPress={handleRegister}
