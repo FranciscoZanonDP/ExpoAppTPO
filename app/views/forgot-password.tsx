@@ -1,4 +1,5 @@
-import { StyleSheet, View, SafeAreaView, TextInput, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { StyleSheet, View, SafeAreaView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { useState } from 'react';
@@ -7,19 +8,72 @@ import { Ionicons } from '@expo/vector-icons';
 export default function ForgotPasswordScreen() {
     const router = useRouter();
     const [email, setEmail] = useState('');
+    const [step, setStep] = useState<'email' | 'codigo'>('email');
+    const [codigo, setCodigo] = useState('');
+    const [nuevaPassword, setNuevaPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleBack = () => {
         router.back();
     };
 
-    const handleSendLink = () => {
-        // Aquí iría la lógica para enviar el enlace de recuperación
-        console.log('Enlace enviado a:', email);
+    const handleSendLink = async () => {
+        if (!email) {
+            Alert.alert('Por favor ingresa tu email');
+            return;
+        }
+        setLoading(true);
+        try {
+            const res = await fetch('https://expo-app-tpo.vercel.app/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'recuperar', email })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                Alert.alert('Error', data.error || 'No se pudo enviar el código');
+                setLoading(false);
+                return;
+            }
+            Alert.alert('Código enviado', 'Revisa tu email. El código es válido por 30 minutos.');
+            setStep('codigo');
+        } catch (err) {
+            Alert.alert('Error de red', String(err));
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleRemind = () => {
-        // Aquí iría la lógica para recordar la contraseña
-        console.log('Recordatorio enviado');
+    const handleChangePassword = async () => {
+        if (!codigo || !nuevaPassword || !confirmPassword) {
+            Alert.alert('Completa todos los campos');
+            return;
+        }
+        if (nuevaPassword !== confirmPassword) {
+            Alert.alert('Las contraseñas no coinciden');
+            return;
+        }
+        setLoading(true);
+        try {
+            const res = await fetch('https://expo-app-tpo.vercel.app/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'cambiar', email, codigo, nuevaPassword })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                Alert.alert('Error', data.error || 'No se pudo cambiar la contraseña');
+                setLoading(false);
+                return;
+            }
+            Alert.alert('¡Contraseña cambiada!', 'Ya puedes iniciar sesión con tu nueva contraseña.');
+            router.replace('/views/login');
+        } catch (err) {
+            Alert.alert('Error de red', String(err));
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -42,38 +96,81 @@ export default function ForgotPasswordScreen() {
                 {/* Parte inferior con fondo blanco */}
                 <View style={styles.bottomSection}>
                     <View style={styles.formContainer}>
-                        <View style={styles.inputContainer}>
-                            <ThemedText style={styles.inputLabel}>Email</ThemedText>
-                            <TextInput
-                                style={styles.input}
-                                value={email}
-                                placeholder="cookit@cookit.com"
-                                placeholderTextColor="#999"
-                                onChangeText={setEmail}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                            />
-                            <View style={styles.checkmark}>
-                                <Ionicons name="checkmark" size={20} color="#4CAF50" />
-                            </View>
-                        </View>
-
-                        <TouchableOpacity
-                            style={styles.sendButton}
-                            onPress={handleSendLink}
-                        >
-                            <ThemedText style={styles.sendButtonText}>Enviar Link</ThemedText>
-                        </TouchableOpacity>
-
-                        <ThemedText style={styles.infoText}>
-                            En breves momentos, recibirás un link a través del cual podrás ver instrucciones sobre restaurar tu contraseña.
-                        </ThemedText>
-
-                        <TouchableOpacity onPress={handleRemind} style={styles.remindContainer}>
-                            <ThemedText style={styles.remindText}>
-                                No se envió el link de restauración?{'\n'}Reenviar
-                            </ThemedText>
-                        </TouchableOpacity>
+                        {step === 'email' ? (
+                            <>
+                                <View style={styles.inputContainer}>
+                                    <ThemedText style={styles.inputLabel}>Email</ThemedText>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={email}
+                                        placeholder="cookit@cookit.com"
+                                        placeholderTextColor="#999"
+                                        onChangeText={setEmail}
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                    />
+                                    <View style={styles.checkmark}>
+                                        <Ionicons name="checkmark" size={20} color="#4CAF50" />
+                                    </View>
+                                </View>
+                                <TouchableOpacity
+                                    style={styles.sendButton}
+                                    onPress={handleSendLink}
+                                    disabled={loading}
+                                >
+                                    <ThemedText style={styles.sendButtonText}>{loading ? 'Enviando...' : 'Enviar código'}</ThemedText>
+                                </TouchableOpacity>
+                                <ThemedText style={styles.infoText}>
+                                    Recibirás un código por email. El código es válido por 30 minutos.
+                                </ThemedText>
+                            </>
+                        ) : (
+                            <>
+                                <View style={styles.inputContainer}>
+                                    <ThemedText style={styles.inputLabel}>Código recibido</ThemedText>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={codigo}
+                                        placeholder="Código"
+                                        placeholderTextColor="#999"
+                                        onChangeText={setCodigo}
+                                        keyboardType="numeric"
+                                        autoCapitalize="none"
+                                    />
+                                </View>
+                                <View style={styles.inputContainer}>
+                                    <ThemedText style={styles.inputLabel}>Nueva contraseña</ThemedText>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={nuevaPassword}
+                                        placeholder="Nueva contraseña"
+                                        placeholderTextColor="#999"
+                                        onChangeText={setNuevaPassword}
+                                        secureTextEntry
+                                        autoCapitalize="none"
+                                    />
+                                </View>
+                                <View style={styles.inputContainer}>
+                                    <ThemedText style={styles.inputLabel}>Repetir contraseña</ThemedText>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={confirmPassword}
+                                        placeholder="Repetir contraseña"
+                                        placeholderTextColor="#999"
+                                        onChangeText={setConfirmPassword}
+                                        secureTextEntry
+                                        autoCapitalize="none"
+                                    />
+                                </View>
+                                <TouchableOpacity
+                                    style={styles.sendButton}
+                                    onPress={handleChangePassword}
+                                    disabled={loading}
+                                >
+                                    <ThemedText style={styles.sendButtonText}>{loading ? 'Cambiando...' : 'Cambiar contraseña'}</ThemedText>
+                                </TouchableOpacity>
+                            </>
+                        )}
                     </View>
                 </View>
             </View>
