@@ -51,7 +51,4 @@ module.exports = async (req, res) => {
         console.log('[enviar-codigo] Error enviando email o guardando código:', err);
         return res.status(500).json({ error: 'No se pudo enviar el email', detalle: err.message });
     }
-};
-
-// Exportar codigos para otros endpoints
-module.exports.codigos = codigos; 
+}; 
