@@ -8,20 +8,92 @@ const cursos = {
     curso1: {
         titulo: 'Pastelería Básica',
         autor: 'Zanon',
-        imagen: require('../../assets/images/curso_panaderia.jpeg'),
         precio: '$35.000',
+        modalidad: 'Virtual',
+        horario: 'Mie-22hs',
+        descripcion_breve: 'Curso para aprender las bases de la pastelería.',
+        descripcion_completa: 'inicio: 10-07-25 | finalización: 11-09-25\n1 clase semanal\nAlumnos debe traer sus insumos y utensillos. Aprenderás técnicas de masas, batidos y decoración profesional.',
+        objetivo: 'Dominar las técnicas fundamentales de pastelería, desde la elaboración de masas y batidos básicos hasta la decoración profesional.',
+        temario: 'Ingredientes y utensillos básicos - Masas quebradas - Técnicas de horneado - Rellenos y coberturas - Fundamentos de la decoración',
+        practicas: 'Elaboración de tartas, bizcochuelos y decoración de tortas.',
+        recomendaciones: 'Tener recipientes de distintos tamaños',
+        requisitos: 'Batidora, bowls, espátula',
+        provee_insumos: 'alumno',
+        sedes: [
+            {
+                nombre: 'Sede Centro',
+                direccion: 'Av. Principal 123',
+                telefono: '011-1234-5678',
+                horarios: 'Miércoles 22hs',
+                modalidad: 'Presencial',
+                arancel: '$35.000',
+                promociones: '10% de descuento pagando en efectivo',
+            },
+            {
+                nombre: 'Sede Norte',
+                direccion: 'Calle Falsa 456',
+                telefono: '011-8765-4321',
+                horarios: 'Jueves 20hs',
+                modalidad: 'Virtual',
+                arancel: '$32.000',
+                promociones: '2x1 para alumnos nuevos',
+            },
+        ],
+        imagen: require('../../assets/images/curso_panaderia.jpeg'),
     },
     curso2: {
         titulo: 'Curso de Pastas',
         autor: 'Zanon',
-        imagen: require('../../assets/images/curso_pastas.jpg'),
         precio: '$30.000',
+        modalidad: 'Virtual',
+        horario: 'Jue-20hs',
+        descripcion_breve: 'Aprende a hacer pastas caseras y salsas tradicionales.',
+        descripcion_completa: 'inicio: 15-08-25 | finalización: 15-10-25\n1 clase semanal\nAlumnos debe traer sus insumos y utensillos. Aprende técnicas de amasado, salsas y rellenos.',
+        objetivo: 'Aprender a hacer pastas caseras y salsas tradicionales.',
+        temario: 'Harinas - Técnicas de amasado - Salsas clásicas - Rellenos - Presentación',
+        practicas: 'Preparación de pastas frescas y salsas.',
+        recomendaciones: 'Tener palo de amasar y cuchillo afilado',
+        requisitos: 'Harina, huevos, cuchillo',
+        provee_insumos: 'alumno',
+        sedes: [
+            {
+                nombre: 'Sede Centro',
+                direccion: 'Av. Principal 123',
+                telefono: '011-1234-5678',
+                horarios: 'Jueves 20hs',
+                modalidad: 'Presencial',
+                arancel: '$30.000',
+                promociones: '10% de descuento pagando en efectivo',
+            },
+        ],
+        imagen: require('../../assets/images/curso_pastas.jpg'),
     },
     curso3: {
         titulo: 'Curso de Cocina Saludable',
         autor: 'Zanon',
-        imagen: require('../../assets/images/curso_saludable.jpg'),
         precio: '$28.000',
+        modalidad: 'Virtual',
+        horario: 'Vie-18hs',
+        descripcion_breve: 'Cocina platos saludables y equilibrados.',
+        descripcion_completa: 'inicio: 01-09-25 | finalización: 01-11-25\n1 clase semanal\nAlumnos debe traer sus insumos y utensillos. Aprende técnicas de cocción saludable y menús balanceados.',
+        objetivo: 'Cocinar platos saludables y equilibrados para toda la familia.',
+        temario: 'Verduras - Técnicas de cocción saludable - Menús balanceados - Snacks saludables',
+        practicas: 'Preparación de menús saludables y snacks.',
+        recomendaciones: 'Tener procesadora o licuadora',
+        requisitos: 'Verduras frescas, procesadora',
+        provee_insumos: 'alumno',
+        sedes: [
+            {
+                nombre: 'Sede Norte',
+                direccion: 'Calle Falsa 456',
+                telefono: '011-8765-4321',
+                horarios: 'Viernes 18hs',
+                modalidad: 'Virtual',
+                arancel: '$28.000',
+                promociones: 'Descuento 15% para grupos',
+            },
+        ],
+        imagen: require('../../assets/images/curso_saludable.jpg'),
     },
 };
 
@@ -57,10 +129,32 @@ export default function PagoCursoScreen() {
                 return;
             }
             const usuario = JSON.parse(usuarioStr);
+            const cursoData = cursos[id as keyof typeof cursos];
+            const sedeInfo = (cursoData?.sedes?.find(s => s.nombre === sede) || {}) as {
+                horarios?: string;
+                arancel?: string;
+                modalidad?: string;
+                promociones?: string;
+                direccion?: string;
+                telefono?: string;
+            };
+            const body = {
+                usuario_email: usuario.email,
+                curso_id: id,
+                sede,
+                curso_titulo: cursoData.titulo,
+                curso_horario: sedeInfo.horarios,
+                curso_precio: sedeInfo.arancel,
+                curso_requisitos: cursoData.requisitos,
+                curso_modalidad: sedeInfo.modalidad,
+                curso_promociones: sedeInfo.promociones,
+                curso_direccion: sedeInfo.direccion,
+                curso_telefono: sedeInfo.telefono
+            };
             const res = await fetch('https://expo-app-tpo.vercel.app/api/inscripciones', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ usuario_email: usuario.email, curso_id: id, sede }),
+                body: JSON.stringify(body),
             });
             if (!res.ok) {
                 const data = await res.json();

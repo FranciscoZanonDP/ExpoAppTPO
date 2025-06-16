@@ -39,12 +39,32 @@ module.exports = async (req, res) => {
             // Traer datos del curso y requisitos (mock, deberías traer de la DB real)
             let curso = {};
             let sedeInfo = {};
-            try {
-                const cursos = require('./cursos.json');
-                curso = cursos[curso_id] || {};
-                sedeInfo = curso.sedes?.find(s => s.nombre === sede) || {};
-            } catch (e) {
-                console.log('[inscripciones] Error obteniendo datos de curso desde cursos.json:', e);
+            // Si el front envía los datos, usarlos directamente
+            if (
+                req.body.curso_titulo || req.body.curso_horario || req.body.curso_precio || req.body.curso_requisitos ||
+                req.body.curso_modalidad || req.body.curso_promociones || req.body.curso_direccion || req.body.curso_telefono
+            ) {
+                curso = {
+                    titulo: req.body.curso_titulo,
+                    requisitos: req.body.curso_requisitos
+                };
+                sedeInfo = {
+                    horarios: req.body.curso_horario,
+                    arancel: req.body.curso_precio,
+                    modalidad: req.body.curso_modalidad,
+                    promociones: req.body.curso_promociones,
+                    direccion: req.body.curso_direccion,
+                    telefono: req.body.curso_telefono,
+                    nombre: sede
+                };
+            } else {
+                try {
+                    const cursos = require('./cursos.json');
+                    curso = cursos[curso_id] || {};
+                    sedeInfo = curso.sedes?.find(s => s.nombre === sede) || {};
+                } catch (e) {
+                    console.log('[inscripciones] Error obteniendo datos de curso desde cursos.json:', e);
+                }
             }
             // Insertar inscripción con datos completos
             const result = await client.query(
