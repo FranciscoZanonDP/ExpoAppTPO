@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'Email y código requeridos' });
     }
     if (codigos[email] && codigos[email] === codigo) {
-        // Código correcto, eliminarlo para que no se reutilice
+        // Código correcto, eliminarlo para que no se reutilice.
         delete codigos[email];
         return res.status(200).json({ valido: true });
     } else {
