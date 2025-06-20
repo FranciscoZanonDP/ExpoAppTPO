@@ -115,6 +115,54 @@ module.exports = async (req, res) => {
             console.log('[inscripciones] Inscripciones encontradas:', result.rows.length);
             return res.status(200).json({ inscripciones: result.rows });
         }
+        if (req.method === 'DELETE') {
+            const { usuario_email, curso_id, tipo_reintegro, porcentaje_reintegro } = req.body;
+            console.log('[inscripciones] Solicitud de baja:', { usuario_email, curso_id });
+            if (!usuario_email || !curso_id) {
+                console.log('[inscripciones] Faltan datos para dar de baja');
+                return res.status(400).json({ error: 'Faltan datos para dar de baja' });
+            }
+            
+            // Verificar que la inscripción existe
+            const existeResult = await client.query(
+                'SELECT id, curso_titulo FROM inscripciones WHERE usuario_email = $1 AND curso_id = $2',
+                [usuario_email, curso_id]
+            );
+            
+            if (existeResult.rows.length === 0) {
+                console.log('[inscripciones] Inscripción no encontrada');
+                return res.status(404).json({ error: 'Inscripción no encontrada' });
+            }
+            
+            const inscripcion = existeResult.rows[0];
+            
+            // Eliminar la inscripción
+            await client.query(
+                'DELETE FROM inscripciones WHERE usuario_email = $1 AND curso_id = $2',
+                [usuario_email, curso_id]
+            );
+            
+            console.log('[inscripciones] Inscripción eliminada:', inscripcion.id);
+            
+            // Enviar email de confirmación de baja
+            try {
+                const reintegroInfo = porcentaje_reintegro > 0 
+                    ? `\n\nREINTEGRO:\n- Porcentaje: ${porcentaje_reintegro}%\n- Modalidad: ${tipo_reintegro === 'tarjeta' ? 'Reintegro a tarjeta' : tipo_reintegro === 'credito' ? 'Crédito en cuenta corriente' : 'Sin reintegro'}\n\nEl reintegro se procesará en los próximos 5-7 días hábiles.`
+                    : '\n\nSegún las políticas de reintegro, no corresponde devolución para esta fecha de baja.';
+
+                await transporter.sendMail({
+                    from: 'Cookit <panchizanon@gmail.com>',
+                    to: usuario_email,
+                    subject: 'Confirmación de baja - ' + inscripcion.curso_titulo,
+                    text: `Baja exitosa!\n\nTe has dado de baja del curso: ${inscripcion.curso_titulo}${reintegroInfo}\n\nLamentamos que no puedas continuar con nosotros. ¡Te esperamos en futuros cursos!\n\nSaludos,\nEquipo Cookit`
+                });
+                console.log('[inscripciones] Email de baja enviado a', usuario_email);
+            } catch (e) {
+                console.log('[inscripciones] Error enviando email de baja:', e);
+            }
+            
+            return res.status(200).json({ success: true, message: 'Baja exitosa' });
+        }
         console.log('[inscripciones] Método no permitido:', req.method);
         return res.status(405).json({ error: 'Método no permitido' });
     } catch (err) {

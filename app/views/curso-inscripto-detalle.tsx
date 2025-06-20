@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const cursos = {
     curso1: {
@@ -96,11 +97,157 @@ const cursos = {
 export default function CursoInscriptoDetalleScreen() {
     const router = useRouter();
     const { id, sede } = useLocalSearchParams();
+    const [loading, setLoading] = useState(false);
     const curso = cursos[id as keyof typeof cursos];
     // Si no hay sede especificada, tomar la primera sede disponible
     const sedeInfo = sede 
         ? curso?.sedes?.find(s => s.nombre === sede)
         : curso?.sedes?.[0];
+
+    // Función para extraer fecha de inicio del curso
+    const getFechaInicio = () => {
+        if (!curso.descripcion_completa) return null;
+        const match = curso.descripcion_completa.match(/inicio:\s*(\d{2}-\d{2}-\d{2})/);
+        if (match) {
+            const [day, month, year] = match[1].split('-');
+            return new Date(2000 + parseInt(year), parseInt(month) - 1, parseInt(day));
+        }
+        return null;
+    };
+
+    // Función para calcular políticas de reintegro
+    const getPoliticaReintegro = () => {
+        const fechaInicio = getFechaInicio();
+        if (!fechaInicio) return { porcentaje: 0, descripcion: 'Sin información de fecha', opciones: [] };
+
+        const hoy = new Date();
+        const diffTime = fechaInicio.getTime() - hoy.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays >= 10) {
+            return { 
+                porcentaje: 100, 
+                descripcion: `${diffDays} días antes del inicio`,
+                opciones: ['Reintegro a tarjeta', 'Crédito en cuenta corriente']
+            };
+        } else if (diffDays >= 1 && diffDays <= 9) {
+            return { 
+                porcentaje: 70, 
+                descripcion: `${diffDays} días antes del inicio`,
+                opciones: ['Reintegro a tarjeta', 'Crédito en cuenta corriente']
+            };
+        } else if (diffDays === 0) {
+            return { 
+                porcentaje: 50, 
+                descripcion: 'Día de inicio',
+                opciones: ['Reintegro a tarjeta', 'Crédito en cuenta corriente']
+            };
+        } else {
+            return { 
+                porcentaje: 0, 
+                descripcion: 'Curso ya iniciado',
+                opciones: []
+            };
+        }
+    };
+
+    const politicaReintegro = getPoliticaReintegro();
+
+    const handleDarseDeBaja = () => {
+        const mensaje = politicaReintegro.porcentaje > 0 
+            ? `¿Estás seguro que quieres darte de baja del curso "${curso.titulo}"?\n\nSegún las políticas de reintegro, te corresponde el ${politicaReintegro.porcentaje}% de reintegro (${politicaReintegro.descripcion}).`
+            : `¿Estás seguro que quieres darte de baja del curso "${curso.titulo}"?\n\nAdvertencia: No corresponde reintegro (${politicaReintegro.descripcion}).`;
+
+        Alert.alert(
+            "Confirmar baja",
+            mensaje,
+            [
+                {
+                    text: "Cancelar",
+                    style: "cancel"
+                },
+                {
+                    text: "Dar de baja",
+                    style: "destructive",
+                    onPress: () => {
+                        if (politicaReintegro.porcentaje > 0 && politicaReintegro.opciones.length > 0) {
+                            mostrarOpcionesReintegro();
+                        } else {
+                            procesarBaja('sin_reintegro');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const mostrarOpcionesReintegro = () => {
+        Alert.alert(
+            "Opciones de reintegro",
+            `Tienes derecho al ${politicaReintegro.porcentaje}% de reintegro. ¿Cómo prefieres recibirlo?`,
+            [
+                {
+                    text: "Cancelar",
+                    style: "cancel"
+                },
+                {
+                    text: "Reintegro a tarjeta",
+                    onPress: () => procesarBaja('tarjeta')
+                },
+                {
+                    text: "Crédito en cuenta",
+                    onPress: () => procesarBaja('credito')
+                }
+            ]
+        );
+    };
+
+    const procesarBaja = async (tipoReintegro: string) => {
+        setLoading(true);
+        try {
+            const usuarioStr = await AsyncStorage.getItem('usuario');
+            if (!usuarioStr) {
+                Alert.alert('Error', 'Usuario no encontrado');
+                return;
+            }
+            const usuario = JSON.parse(usuarioStr);
+            
+            const response = await fetch('https://expo-app-tpo.vercel.app/api/inscripciones', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    usuario_email: usuario.email,
+                    curso_id: id,
+                    tipo_reintegro: tipoReintegro,
+                    porcentaje_reintegro: politicaReintegro.porcentaje
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                Alert.alert(
+                    'Baja exitosa',
+                    'Te has dado de baja del curso exitosamente.',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => router.replace('/views/mis-cursos')
+                        }
+                    ]
+                );
+            } else {
+                Alert.alert('Error', data.error || 'Error al darse de baja');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Error de conexión. Intenta nuevamente.');
+            console.error('Error al darse de baja:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     if (!curso) {
         return (
@@ -153,6 +300,46 @@ export default function CursoInscriptoDetalleScreen() {
                     <Text style={styles.infoValue}>{curso.recomendaciones || '-'}</Text>
                     <Text style={styles.infoLabel}>Insumos provistos por:</Text>
                     <Text style={styles.infoValue}>{curso.provee_insumos === 'empresa' ? 'La empresa' : 'El alumno'}</Text>
+                    
+                    {/* Políticas de Reintegro */}
+                    <View style={styles.politicaContainer}>
+                        <Text style={styles.politicaTitle}>Políticas de Reintegro</Text>
+                        <View style={styles.politicaActual}>
+                            <Ionicons 
+                                name={politicaReintegro.porcentaje > 0 ? "checkmark-circle" : "close-circle"} 
+                                size={20} 
+                                color={politicaReintegro.porcentaje > 0 ? "#28a745" : "#dc3545"} 
+                                style={styles.politicaIcon}
+                            />
+                            <View style={styles.politicaTexto}>
+                                <Text style={[styles.politicaPorcentaje, 
+                                    { color: politicaReintegro.porcentaje > 0 ? "#28a745" : "#dc3545" }
+                                ]}>
+                                    {politicaReintegro.porcentaje}% de reintegro
+                                </Text>
+                                <Text style={styles.politicaDescripcion}>{politicaReintegro.descripcion}</Text>
+                            </View>
+                        </View>
+                        
+                        <View style={styles.politicaReglas}>
+                            <Text style={styles.politicaReglasTitle}>Reglas generales:</Text>
+                            <Text style={styles.politicaRegla}>• Hasta 10 días antes: 100% reintegro</Text>
+                            <Text style={styles.politicaRegla}>• Entre 9 y 1 día antes: 70% reintegro</Text>
+                            <Text style={styles.politicaRegla}>• El día de inicio: 50% reintegro</Text>
+                            <Text style={styles.politicaRegla}>• Después del inicio: 0% reintegro</Text>
+                        </View>
+                    </View>
+                    
+                    <TouchableOpacity 
+                        style={styles.bajaButton} 
+                        onPress={handleDarseDeBaja}
+                        disabled={loading}
+                    >
+                        <Ionicons name="exit-outline" size={20} color="#fff" style={styles.bajaButtonIcon} />
+                        <Text style={styles.bajaButtonText}>
+                            {loading ? 'Procesando...' : 'Darme de baja del curso'}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             </ScrollView>
         </View>
@@ -229,5 +416,81 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#FFF',
+    },
+    bajaButton: {
+        backgroundColor: '#dc3545',
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 32,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    bajaButtonIcon: {
+        marginRight: 8,
+    },
+    bajaButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    politicaContainer: {
+        backgroundColor: '#f8f9fa',
+        borderRadius: 12,
+        padding: 16,
+        marginTop: 24,
+        borderWidth: 1,
+        borderColor: '#e9ecef',
+    },
+    politicaTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 12,
+    },
+    politicaActual: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        padding: 12,
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#dee2e6',
+    },
+    politicaIcon: {
+        marginRight: 12,
+    },
+    politicaTexto: {
+        flex: 1,
+    },
+    politicaPorcentaje: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 2,
+    },
+    politicaDescripcion: {
+        fontSize: 14,
+        color: '#666',
+    },
+    politicaReglas: {
+        paddingTop: 8,
+    },
+    politicaReglasTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#666',
+        marginBottom: 8,
+    },
+    politicaRegla: {
+        fontSize: 13,
+        color: '#666',
+        marginBottom: 4,
     },
 }); 
