@@ -155,15 +155,6 @@ export default function CursoDetalleScreen() {
                 <TouchableOpacity style={styles.backButtonContainer} onPress={() => router.replace('/views/home')}>
                     <Ionicons name="arrow-back" size={32} color="#fff" />
                 </TouchableOpacity>
-                {/* Iconos derecha */}
-                <View style={styles.rightIcons}>
-                    <TouchableOpacity style={styles.iconCircle}>
-                        <Ionicons name="heart" size={24} color="#FF7B6B" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.iconCircle}>
-                        <Ionicons name="chatbubble" size={24} color="#FF7B6B" />
-                    </TouchableOpacity>
-                </View>
                 {/* Título y autor */}
                 <View style={styles.headerTextContainer}>
                     <Text style={styles.headerTitle}>{curso.titulo}</Text>
@@ -298,22 +289,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 4,
     },
-    rightIcons: {
-        position: 'absolute',
-        top: 28,
-        right: 18,
-        flexDirection: 'column',
-        gap: 12,
-        zIndex: 10,
-    },
-    iconCircle: {
-        backgroundColor: '#fff',
-        borderRadius: 20,
-        padding: 6,
-        alignItems: 'center',
-        marginBottom: 6,
-        elevation: 2,
-    },
+
     headerTextContainer: {
         position: 'absolute',
         bottom: 50,
