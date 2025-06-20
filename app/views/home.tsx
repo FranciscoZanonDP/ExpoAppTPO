@@ -6,6 +6,8 @@ import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 
+const DEFAULT_IMAGE = "https://media.istockphoto.com/id/1409329028/es/vector/no-hay-imagen-disponible-marcador-de-posici%C3%B3n-miniatura-icono-dise%C3%B1o-de-ilustraci%C3%B3n.jpg?s=612x612&w=0&k=20&c=Bd89b8CBr-IXx9mBbTidc-wu_gtIj8Py_EMr3hGGaPw=";
+
 export default function HomeScreen() {
   const router = useRouter();
   const [searchText, setSearchText] = useState('');
@@ -139,13 +141,9 @@ export default function HomeScreen() {
                       onPress={() => handleRecipePress(receta)}
                     >
                       <Image
-                        source={receta.imagen_url ? { uri: receta.imagen_url } : require('../../assets/images/tortadebanana.jpg')}
+                        source={receta.imagen_url ? { uri: receta.imagen_url } : { uri: DEFAULT_IMAGE }}
                         style={styles.recipeImage}
                       />
-                      <View style={styles.ratingBadge}>
-                        <Ionicons name="star" size={10} color="white" />
-                        <ThemedText style={styles.ratingText}>{receta.rating || '4.5'}</ThemedText>
-                      </View>
                       <View style={styles.recipeInfo}>
                         <ThemedText style={styles.recipeTitle}>{receta.nombre}</ThemedText>
                         <ThemedText style={styles.recipeCategory}>{receta.categoria}</ThemedText>
@@ -342,23 +340,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
   },
-  ratingBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#FF7B6B',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
-    marginLeft: 2,
-  },
+
   recipeInfo: {
     padding: 10,
   },

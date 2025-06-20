@@ -1,8 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const DEFAULT_IMAGE = "https://media.istockphoto.com/id/1409329028/es/vector/no-hay-imagen-disponible-marcador-de-posici%C3%B3n-miniatura-icono-dise%C3%B1o-de-ilustraci%C3%B3n.jpg?s=612x612&w=0&k=20&c=Bd89b8CBr-IXx9mBbTidc-wu_gtIj8Py_EMr3hGGaPw=";
 
 export default function MisRecetasScreen() {
     const router = useRouter();
@@ -72,8 +74,15 @@ export default function MisRecetasScreen() {
                     <View style={styles.placeholderRow}>
                         {recetas.map((receta, idx) => (
                             <TouchableOpacity key={receta.id} style={styles.placeholderBox} onPress={() => router.push({ pathname: '/views/receta-detalle-mis-recetas', params: { id: receta.id } })}>
-                                <Text style={{ fontWeight: 'bold', color: '#FF7B6B', textAlign: 'center', marginTop: 10 }}>{receta.nombre}</Text>
-                                <Text style={{ color: '#333', textAlign: 'center', fontSize: 12 }}>{receta.categoria}</Text>
+                                <Image 
+                                    source={{ uri: receta.imagen || DEFAULT_IMAGE }} 
+                                    style={styles.recetaImage}
+                                    resizeMode="cover"
+                                />
+                                <View style={styles.recetaTextContainer}>
+                                    <Text style={styles.recetaNombre}>{receta.nombre}</Text>
+                                    <Text style={styles.recetaCategoria}>{receta.categoria}</Text>
+                                </View>
                             </TouchableOpacity>
                         ))}
                     </View>
@@ -159,9 +168,31 @@ const styles = StyleSheet.create({
     },
     placeholderBox: {
         width: 110,
-        height: 110,
+        height: 140,
         backgroundColor: '#E5E5E5',
         borderRadius: 6,
+        overflow: 'hidden',
+    },
+    recetaImage: {
+        width: '100%',
+        height: 80,
+    },
+    recetaTextContainer: {
+        padding: 8,
+        flex: 1,
+        justifyContent: 'center',
+    },
+    recetaNombre: {
+        fontWeight: 'bold',
+        color: '#FF7B6B',
+        textAlign: 'center',
+        fontSize: 12,
+        marginBottom: 2,
+    },
+    recetaCategoria: {
+        color: '#333',
+        textAlign: 'center',
+        fontSize: 10,
     },
     buttonRow: {
         flexDirection: 'row',
