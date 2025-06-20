@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import QRCode from 'react-native-qrcode-svg';
 
 const cursos = {
     curso1: {
@@ -98,6 +99,8 @@ export default function CursoInscriptoDetalleScreen() {
     const router = useRouter();
     const { id, sede } = useLocalSearchParams();
     const [loading, setLoading] = useState(false);
+    const [showQR, setShowQR] = useState(false);
+    const [usuario, setUsuario] = useState<any>(null);
     const curso = cursos[id as keyof typeof cursos];
     // Si no hay sede especificada, tomar la primera sede disponible
     const sedeInfo = sede 
@@ -152,6 +155,41 @@ export default function CursoInscriptoDetalleScreen() {
     };
 
     const politicaReintegro = getPoliticaReintegro();
+
+    // Obtener datos del usuario al cargar
+    React.useEffect(() => {
+        const getUsuario = async () => {
+            const usuarioStr = await AsyncStorage.getItem('usuario');
+            if (usuarioStr) {
+                setUsuario(JSON.parse(usuarioStr));
+            }
+        };
+        getUsuario();
+    }, []);
+
+    // Generar datos para el QR de asistencia
+    const generarQRData = () => {
+        const fechaHoy = new Date().toISOString().split('T')[0];
+        const horaActual = new Date().toTimeString().split(' ')[0];
+        
+        return JSON.stringify({
+            curso_id: id,
+            usuario_email: usuario?.email || '',
+            fecha: fechaHoy,
+            hora: horaActual,
+            sede: sedeInfo?.nombre || '',
+            curso_titulo: curso.titulo,
+            tipo: 'asistencia'
+        });
+    };
+
+    const handleGenerarQR = () => {
+        if (!usuario) {
+            Alert.alert('Error', 'Usuario no encontrado');
+            return;
+        }
+        setShowQR(true);
+    };
 
     const handleDarseDeBaja = () => {
         const mensaje = politicaReintegro.porcentaje > 0 
@@ -330,6 +368,17 @@ export default function CursoInscriptoDetalleScreen() {
                         </View>
                     </View>
                     
+                    {/* Botón de QR para asistencia (solo cursos presenciales) */}
+                    {sedeInfo?.modalidad !== 'Virtual' && (
+                        <TouchableOpacity 
+                            style={styles.qrButton} 
+                            onPress={handleGenerarQR}
+                        >
+                            <Ionicons name="qr-code-outline" size={20} color="#fff" style={styles.qrButtonIcon} />
+                            <Text style={styles.qrButtonText}>Generar QR de Asistencia</Text>
+                        </TouchableOpacity>
+                    )}
+                    
                     <TouchableOpacity 
                         style={styles.bajaButton} 
                         onPress={handleDarseDeBaja}
@@ -342,6 +391,45 @@ export default function CursoInscriptoDetalleScreen() {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
+            
+            {/* Modal para mostrar QR */}
+            <Modal
+                visible={showQR}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setShowQR(false)}
+            >
+                <View style={styles.qrModalOverlay}>
+                    <View style={styles.qrModalContainer}>
+                        <View style={styles.qrModalHeader}>
+                            <Text style={styles.qrModalTitle}>QR de Asistencia</Text>
+                            <TouchableOpacity onPress={() => setShowQR(false)} style={styles.qrCloseButton}>
+                                <Ionicons name="close" size={24} color="#333" />
+                            </TouchableOpacity>
+                        </View>
+                        
+                        <View style={styles.qrContainer}>
+                            <QRCode
+                                value={generarQRData()}
+                                size={200}
+                                color="#333"
+                                backgroundColor="white"
+                            />
+                        </View>
+                        
+                        <View style={styles.qrInfo}>
+                            <Text style={styles.qrInfoTitle}>{curso.titulo}</Text>
+                            <Text style={styles.qrInfoText}>Sede: {sedeInfo?.nombre}</Text>
+                            <Text style={styles.qrInfoText}>Fecha: {new Date().toLocaleDateString('es-AR')}</Text>
+                            <Text style={styles.qrInfoText}>Hora: {new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</Text>
+                        </View>
+                        
+                        <Text style={styles.qrInstructions}>
+                            Muestra este código QR al docente para registrar tu asistencia
+                        </Text>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -492,5 +580,93 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#666',
         marginBottom: 4,
+    },
+    // Estilos para QR
+    qrButton: {
+        backgroundColor: '#007AFF',
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    qrButtonIcon: {
+        marginRight: 8,
+    },
+    qrButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    qrModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    qrModalContainer: {
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 24,
+        margin: 20,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    qrModalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        marginBottom: 20,
+    },
+    qrModalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#333',
+        flex: 1,
+        textAlign: 'center',
+    },
+    qrCloseButton: {
+        padding: 4,
+    },
+    qrContainer: {
+        padding: 20,
+        backgroundColor: '#f8f9fa',
+        borderRadius: 12,
+        marginBottom: 20,
+    },
+    qrInfo: {
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    qrInfoTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    qrInfoText: {
+        fontSize: 14,
+        color: '#666',
+        marginBottom: 2,
+    },
+    qrInstructions: {
+        fontSize: 14,
+        color: '#666',
+        textAlign: 'center',
+        fontStyle: 'italic',
+        paddingHorizontal: 16,
     },
 }); 
