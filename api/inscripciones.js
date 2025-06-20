@@ -188,10 +188,10 @@ module.exports = async (req, res) => {
                 });
             }
 
-            // Inscripciones normales con cálculo de estado
+            // Inscripciones normales con cálculo de estado (sin cursos dados de baja)
             const result = await client.query(
-                'SELECT * FROM inscripciones WHERE usuario_email = $1',
-                [usuario_email]
+                'SELECT * FROM inscripciones WHERE usuario_email = $1 AND estado != $2',
+                [usuario_email, 'dado_de_baja']
             );
             
             // Actualizar estados según fechas
