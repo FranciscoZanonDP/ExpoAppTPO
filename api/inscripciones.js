@@ -14,6 +14,35 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+// Función para calcular estado del curso según fechas
+function calcularEstadoCurso(inscripcion) {
+    if (inscripcion.estado === 'dado_de_baja') return 'dado_de_baja';
+    
+    // Extraer fechas del campo curso_horario o descripción
+    const fechaInicioMatch = inscripcion.curso_titulo?.match(/inicio:\s*(\d{2}-\d{2}-\d{2})/);
+    const fechaFinMatch = inscripcion.curso_titulo?.match(/finalización:\s*(\d{2}-\d{2}-\d{2})/);
+    
+    if (!fechaInicioMatch) return inscripcion.estado || 'por_empezar';
+    
+    const [dayI, monthI, yearI] = fechaInicioMatch[1].split('-');
+    const fechaInicio = new Date(2000 + parseInt(yearI), parseInt(monthI) - 1, parseInt(dayI));
+    
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
+    if (fechaFinMatch) {
+        const [dayF, monthF, yearF] = fechaFinMatch[1].split('-');
+        const fechaFin = new Date(2000 + parseInt(yearF), parseInt(monthF) - 1, parseInt(dayF));
+        
+        if (hoy > fechaFin) return 'finalizado';
+        if (hoy >= fechaInicio) return 'activo';
+    } else {
+        if (hoy >= fechaInicio) return 'activo';
+    }
+    
+    return 'por_empezar';
+}
+
 module.exports = async (req, res) => {
     const client = await pool.connect();
     try {
@@ -71,8 +100,8 @@ module.exports = async (req, res) => {
                 `INSERT INTO inscripciones (
                     usuario_email, curso_id, sede, 
                     curso_titulo, curso_horario, curso_precio, curso_requisitos, 
-                    curso_modalidad, curso_promociones, curso_direccion, curso_telefono
-                ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+                    curso_modalidad, curso_promociones, curso_direccion, curso_telefono, estado
+                ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
                 [
                     usuario_email,
                     curso_id,
@@ -84,8 +113,19 @@ module.exports = async (req, res) => {
                     sedeInfo.modalidad || '',
                     sedeInfo.promociones || '',
                     sedeInfo.direccion || '',
-                    sedeInfo.telefono || ''
+                    sedeInfo.telefono || '',
+                    'por_empezar' // Estado inicial
                 ]
+            );
+
+            // Registrar el pago
+            const inscripcionId = result.rows[0].id;
+            const monto = parseFloat((sedeInfo.arancel || '0').replace(/[$.,]/g, '')) || 0;
+            
+            await client.query(
+                `INSERT INTO pagos (usuario_email, inscripcion_id, monto, metodo_pago, numero_tarjeta_ultimos4) 
+                 VALUES ($1, $2, $3, $4, $5)`,
+                [usuario_email, inscripcionId, monto, 'tarjeta', '****']
             );
             console.log('[inscripciones] Inscripción creada, id:', result.rows[0].id);
             // Enviar email real
@@ -103,17 +143,65 @@ module.exports = async (req, res) => {
             return res.status(201).json({ success: true, id: result.rows[0].id });
         }
         if (req.method === 'GET') {
-            const { usuario_email } = req.query;
+            const { usuario_email, tipo } = req.query;
             if (!usuario_email) {
                 console.log('[inscripciones] Falta usuario_email en GET');
                 return res.status(400).json({ error: 'Falta usuario_email' });
             }
+
+            // Si se solicita historial de pagos
+            if (tipo === 'pagos') {
+                const result = await client.query(
+                    `SELECT p.*, i.curso_titulo, i.sede 
+                     FROM pagos p 
+                     JOIN inscripciones i ON p.inscripcion_id = i.id 
+                     WHERE p.usuario_email = $1 
+                     ORDER BY p.fecha_pago DESC`,
+                    [usuario_email]
+                );
+                return res.status(200).json({ pagos: result.rows });
+            }
+
+            // Si se solicita cuenta corriente
+            if (tipo === 'cuenta_corriente') {
+                const result = await client.query(
+                    `SELECT cc.*, i.curso_titulo 
+                     FROM cuenta_corriente cc 
+                     LEFT JOIN inscripciones i ON cc.inscripcion_id = i.id 
+                     WHERE cc.usuario_email = $1 
+                     ORDER BY cc.fecha DESC`,
+                    [usuario_email]
+                );
+                
+                // Calcular saldo
+                const saldoResult = await client.query(
+                    `SELECT 
+                        COALESCE(SUM(CASE WHEN tipo = 'credito' THEN monto ELSE 0 END) - 
+                                SUM(CASE WHEN tipo = 'debito' THEN monto ELSE 0 END), 0) as saldo
+                     FROM cuenta_corriente WHERE usuario_email = $1`,
+                    [usuario_email]
+                );
+                
+                return res.status(200).json({ 
+                    movimientos: result.rows,
+                    saldo: saldoResult.rows[0].saldo 
+                });
+            }
+
+            // Inscripciones normales con cálculo de estado
             const result = await client.query(
                 'SELECT * FROM inscripciones WHERE usuario_email = $1',
                 [usuario_email]
             );
+            
+            // Actualizar estados según fechas
+            const inscripcionesConEstado = result.rows.map(inscripcion => {
+                const estadoCalculado = calcularEstadoCurso(inscripcion);
+                return { ...inscripcion, estado_calculado: estadoCalculado };
+            });
+            
             console.log('[inscripciones] Inscripciones encontradas:', result.rows.length);
-            return res.status(200).json({ inscripciones: result.rows });
+            return res.status(200).json({ inscripciones: inscripcionesConEstado });
         }
         if (req.method === 'DELETE') {
             const { usuario_email, curso_id, tipo_reintegro, porcentaje_reintegro } = req.body;
@@ -136,11 +224,33 @@ module.exports = async (req, res) => {
             
             const inscripcion = existeResult.rows[0];
             
-            // Eliminar la inscripción
+            // Marcar como dado de baja en lugar de eliminar (para historial)
             await client.query(
-                'DELETE FROM inscripciones WHERE usuario_email = $1 AND curso_id = $2',
-                [usuario_email, curso_id]
+                'UPDATE inscripciones SET estado = $1 WHERE usuario_email = $2 AND curso_id = $3',
+                ['dado_de_baja', usuario_email, curso_id]
             );
+
+            // Si hay reintegro, agregar crédito a cuenta corriente
+            if (porcentaje_reintegro > 0 && tipo_reintegro === 'credito') {
+                const pagoOriginal = await client.query(
+                    'SELECT monto FROM pagos WHERE inscripcion_id = $1',
+                    [inscripcion.id]
+                );
+                
+                const montoReintegro = pagoOriginal.rows.length > 0 
+                    ? (pagoOriginal.rows[0].monto * porcentaje_reintegro / 100)
+                    : 0;
+
+                if (montoReintegro > 0) {
+                    await client.query(
+                        `INSERT INTO cuenta_corriente (usuario_email, tipo, monto, concepto, inscripcion_id) 
+                         VALUES ($1, $2, $3, $4, $5)`,
+                        [usuario_email, 'credito', montoReintegro, 
+                         `Reintegro ${porcentaje_reintegro}% - ${inscripcion.curso_titulo}`, 
+                         inscripcion.id]
+                    );
+                }
+            }
             
             console.log('[inscripciones] Inscripción eliminada:', inscripcion.id);
             

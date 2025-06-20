@@ -53,6 +53,14 @@ export default function AlumnoInfoScreen() {
                     <Ionicons name="school-outline" size={20} color="#FF7B6B" style={styles.infoIcon} />
                     <ThemedText style={styles.infoItem}>Mis Cursos</ThemedText>
                 </TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push('/views/historial-pagos')} style={styles.infoItemRow}>
+                    <Ionicons name="receipt-outline" size={20} color="#FF7B6B" style={styles.infoIcon} />
+                    <ThemedText style={styles.infoItem}>Historial de Pagos</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push('/views/cuenta-corriente')} style={styles.infoItemRow}>
+                    <Ionicons name="card-outline" size={20} color="#FF7B6B" style={styles.infoIcon} />
+                    <ThemedText style={styles.infoItem}>Cuenta Corriente</ThemedText>
+                </TouchableOpacity>
                 <TouchableOpacity onPress={handleLogout} style={styles.infoItemRow}>
                     <Ionicons name="exit-outline" size={20} color="#FF7B6B" style={styles.infoIcon} />
                     <ThemedText style={styles.logoutText}>Cerrar Sesion</ThemedText>

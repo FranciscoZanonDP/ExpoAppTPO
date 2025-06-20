@@ -51,7 +51,7 @@ export default function MisCursosScreen() {
                     const res = await fetch(`https://expo-app-tpo.vercel.app/api/inscripciones?usuario_email=${usuario.email}`);
                     const data = await res.json();
                     if (res.ok && Array.isArray(data.inscripciones)) {
-                        if (isActive) setMisCursos(data.inscripciones.map((i: any) => i.curso_id));
+                        if (isActive) setMisCursos(data.inscripciones);
                     } else {
                         if (isActive) setMisCursos([]);
                     }
@@ -79,17 +79,39 @@ export default function MisCursosScreen() {
                 ) : misCursos.length === 0 ? (
                     <Text style={{ textAlign: 'center', color: '#999', marginTop: 40 }}>No tienes cursos inscriptos.</Text>
                 ) : (
-                    misCursos.map((cid) => {
-                        const curso = cursos[cid as keyof typeof cursos];
+                    misCursos.map((inscripcion: any) => {
+                        const curso = cursos[inscripcion.curso_id as keyof typeof cursos];
                         if (!curso) return null;
+                        
+                        const estadoColor = {
+                            'por_empezar': '#FF7B6B',
+                            'activo': '#28a745',
+                            'finalizado': '#6c757d',
+                            'dado_de_baja': '#dc3545'
+                        };
+                        
+                        const estadoTexto = {
+                            'por_empezar': 'Por empezar',
+                            'activo': 'En curso',
+                            'finalizado': 'Finalizado',
+                            'dado_de_baja': 'Dado de baja'
+                        };
+                        
+                        const estado = inscripcion.estado_calculado || inscripcion.estado || 'por_empezar';
+                        
                         return (
-                            <TouchableOpacity key={cid} style={styles.cursoCard} onPress={() => router.push({ pathname: '/views/curso-inscripto-detalle', params: { id: cid } })}>
+                            <TouchableOpacity key={inscripcion.curso_id} style={styles.cursoCard} onPress={() => router.push({ pathname: '/views/curso-inscripto-detalle', params: { id: inscripcion.curso_id } })}>
                                 <Image source={curso.imagen} style={styles.cursoImg} />
                                 <View style={styles.cursoInfo}>
-                                    <Text style={styles.cursoTitulo}>{curso.titulo}</Text>
+                                    <View style={styles.cursoTituloContainer}>
+                                        <Text style={styles.cursoTitulo}>{curso.titulo}</Text>
+                                        <View style={[styles.estadoBadge, { backgroundColor: estadoColor[estado as keyof typeof estadoColor] }]}>
+                                            <Text style={styles.estadoTexto}>{estadoTexto[estado as keyof typeof estadoTexto]}</Text>
+                                        </View>
+                                    </View>
                                     <Text style={styles.cursoAutor}>Hecho por: {curso.autor}</Text>
-                                    <Text style={styles.cursoHorario}>{curso.horario}</Text>
-                                    <Text style={styles.cursoPrecio}>{curso.precio}</Text>
+                                    <Text style={styles.cursoHorario}>{inscripcion.curso_horario || curso.horario}</Text>
+                                    <Text style={styles.cursoPrecio}>{inscripcion.curso_precio || curso.precio}</Text>
                                 </View>
                             </TouchableOpacity>
                         );
@@ -164,6 +186,23 @@ const styles = StyleSheet.create({
     cursoPrecio: {
         fontSize: 15,
         color: '#222',
+        fontWeight: 'bold',
+    },
+    cursoTituloContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 4,
+    },
+    estadoBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 10,
+        marginLeft: 8,
+    },
+    estadoTexto: {
+        color: 'white',
+        fontSize: 11,
         fontWeight: 'bold',
     },
 }); 
