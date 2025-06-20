@@ -103,15 +103,15 @@ export default function MisCursosScreen() {
                             <TouchableOpacity key={inscripcion.curso_id} style={styles.cursoCard} onPress={() => router.push({ pathname: '/views/curso-inscripto-detalle', params: { id: inscripcion.curso_id } })}>
                                 <Image source={curso.imagen} style={styles.cursoImg} />
                                 <View style={styles.cursoInfo}>
-                                    <View style={styles.cursoTituloContainer}>
-                                        <Text style={styles.cursoTitulo}>{curso.titulo}</Text>
+                                    <Text style={styles.cursoTitulo}>{curso.titulo}</Text>
+                                    <Text style={styles.cursoAutor}>Hecho por: {curso.autor}</Text>
+                                    <Text style={styles.cursoHorario}>{inscripcion.curso_horario || curso.horario}</Text>
+                                    <View style={styles.cursoBottomRow}>
+                                        <Text style={styles.cursoPrecio}>{inscripcion.curso_precio || curso.precio}</Text>
                                         <View style={[styles.estadoBadge, { backgroundColor: estadoColor[estado as keyof typeof estadoColor] }]}>
                                             <Text style={styles.estadoTexto}>{estadoTexto[estado as keyof typeof estadoTexto]}</Text>
                                         </View>
                                     </View>
-                                    <Text style={styles.cursoAutor}>Hecho por: {curso.autor}</Text>
-                                    <Text style={styles.cursoHorario}>{inscripcion.curso_horario || curso.horario}</Text>
-                                    <Text style={styles.cursoPrecio}>{inscripcion.curso_precio || curso.precio}</Text>
                                 </View>
                             </TouchableOpacity>
                         );
@@ -181,24 +181,22 @@ const styles = StyleSheet.create({
     cursoHorario: {
         fontSize: 14,
         color: '#999',
-        marginBottom: 2,
+        marginBottom: 8,
+    },
+    cursoBottomRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     cursoPrecio: {
         fontSize: 15,
         color: '#222',
         fontWeight: 'bold',
     },
-    cursoTituloContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 4,
-    },
     estadoBadge: {
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 10,
-        marginLeft: 8,
     },
     estadoTexto: {
         color: 'white',
