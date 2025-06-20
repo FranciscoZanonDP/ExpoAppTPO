@@ -97,7 +97,10 @@ export default function CursoInscriptoDetalleScreen() {
     const router = useRouter();
     const { id, sede } = useLocalSearchParams();
     const curso = cursos[id as keyof typeof cursos];
-    const sedeInfo = curso?.sedes?.find(s => s.nombre === sede);
+    // Si no hay sede especificada, tomar la primera sede disponible
+    const sedeInfo = sede 
+        ? curso?.sedes?.find(s => s.nombre === sede)
+        : curso?.sedes?.[0];
 
     if (!curso) {
         return (
