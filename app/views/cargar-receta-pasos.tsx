@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useReceta } from '../RecetaContext';
@@ -8,95 +8,146 @@ export default function CargarRecetaPasosScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const { receta, setReceta } = useReceta();
-    const [pasos, setPasos] = useState(receta.pasos.length ? receta.pasos : [
-        { descripcion: '', imagen: null, video: null }
-    ]);
+    const [pasos, setPasos] = useState(receta.pasos.length > 0 ? receta.pasos.map(p => p.descripcion) : []);
+    const [nuevoPaso, setNuevoPaso] = useState('');
+    const [editIndex, setEditIndex] = useState(-1);
+    const [editText, setEditText] = useState('');
 
     useEffect(() => {
         if (params.reset) {
-            setPasos([{ descripcion: '', imagen: null, video: null }]);
+            setPasos([]);
         }
     }, [params.reset]);
 
+    const handleAddPaso = () => {
+        if (nuevoPaso.trim() !== '') {
+            setPasos([...pasos, nuevoPaso.trim()]);
+            setNuevoPaso('');
+        }
+    };
+
+    const handleRemovePaso = (index: number) => {
+        const nuevosPasos = [...pasos];
+        nuevosPasos.splice(index, 1);
+        setPasos(nuevosPasos);
+    };
+
+    const handleMovePaso = (index: number, direction: 'up' | 'down') => {
+        if ((direction === 'up' && index === 0) || (direction === 'down' && index === pasos.length - 1)) {
+            return;
+        }
+        const nuevosPasos = [...pasos];
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
+        [nuevosPasos[index], nuevosPasos[newIndex]] = [nuevosPasos[newIndex], nuevosPasos[index]];
+        setPasos(nuevosPasos);
+    };
+
+    const handleStartEdit = (index: number) => {
+        setEditIndex(index);
+        setEditText(pasos[index]);
+    };
+
+    const handleEndEdit = () => {
+        if (editText.trim() !== '') {
+            const nuevosPasos = [...pasos];
+            nuevosPasos[editIndex] = editText.trim();
+            setPasos(nuevosPasos);
+        }
+        setEditIndex(-1);
+        setEditText('');
+    };
+
     const handleSiguiente = () => {
+        const pasosFinales = pasos.map(p => ({ descripcion: p, imagen: null, video: null }));
         setReceta(prev => ({
             ...prev,
-            pasos,
+            pasos: pasosFinales,
         }));
-        router.push({ pathname: '/views/cargar-receta-resumen', params: { reset: '1' } });
+        router.push({ pathname: '/views/cargar-receta-resumen' });
     };
 
     return (
-        <View style={{ flex: 1, backgroundColor: 'white' }}>
+        <KeyboardAvoidingView style={{ flex: 1, backgroundColor: 'white' }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
             <View style={styles.headerContainer}>
                 <Text style={styles.headerTitle}>Cargar receta</Text>
             </View>
-            <View style={[styles.bodyContainer, { flex: 1 }]}>
-                <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-                    <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/views/cargar-receta-2')}>
-                        <Ionicons name="arrow-back" size={24} color="white" />
+            <ScrollView contentContainerStyle={styles.container}>
+                <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/views/cargar-receta-2')}>
+                    <Ionicons name="arrow-back" size={24} color="white" />
+                </TouchableOpacity>
+                <Text style={styles.title}>Pasos de la Receta</Text>
+                <Text style={styles.subtitle}>Agrega y organiza los pasos de tu receta</Text>
+
+                <View style={styles.addStepContainer}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Describe el siguiente paso de tu receta..."
+                        value={nuevoPaso}
+                        onChangeText={setNuevoPaso}
+                        onSubmitEditing={handleAddPaso}
+                        returnKeyType="done"
+                    />
+                    <TouchableOpacity style={styles.addButton} onPress={handleAddPaso}>
+                        <Text style={styles.addButtonText}>+</Text>
                     </TouchableOpacity>
-                    <Text style={styles.pasosTitle}>Pasos (Mínimo 2)</Text>
-                    {pasos.map((paso, idx) => (
-                        <View key={idx}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <Text style={styles.label}>{`Paso ${idx + 1}`}</Text>
-                                {idx > 0 && (
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            const nuevosPasos = pasos.filter((_, i) => i !== idx);
-                                            setPasos(nuevosPasos);
-                                        }}
-                                        style={{ marginLeft: 10 }}
-                                    >
-                                        <Ionicons name="trash" size={22} color="#FF7B6B" />
-                                    </TouchableOpacity>
-                                )}
+                </View>
+
+                {pasos.map((paso, index) => (
+                    <View key={index} style={styles.stepContainer}>
+                        {editIndex === index ? (
+                            <View style={styles.editView}>
+                                <TextInput
+                                    style={styles.editInput}
+                                    value={editText}
+                                    onChangeText={setEditText}
+                                    autoFocus
+                                    onBlur={handleEndEdit}
+                                    onSubmitEditing={handleEndEdit}
+                                />
+                                <TouchableOpacity onPress={handleEndEdit}>
+                                    <Ionicons name="checkmark" size={24} color="green" />
+                                </TouchableOpacity>
                             </View>
-                            <TextInput
-                                style={styles.textarea}
-                                placeholder="Descripción"
-                                placeholderTextColor="#BDBDBD"
-                                multiline
-                                value={paso.descripcion}
-                                onChangeText={text => {
-                                    const nuevosPasos = [...pasos];
-                                    nuevosPasos[idx].descripcion = text;
-                                    setPasos(nuevosPasos);
-                                }}
-                            />
-                            <View style={styles.mediaRow}>
-                                <View style={styles.mediaCol}>
-                                    <Text style={styles.mediaLabel}>Imágen (opcional)</Text>
-                                    <TouchableOpacity style={styles.mediaIcon}>
-                                        <Ionicons name="image" size={40} color="#222" />
+                        ) : (
+                            <>
+                                <View style={styles.stepNumber}>
+                                    <Text style={styles.stepNumberText}>{index + 1}</Text>
+                                </View>
+                                <Text style={styles.stepText}>{paso}</Text>
+                                <View style={styles.stepActions}>
+                                    <TouchableOpacity onPress={() => handleMovePaso(index, 'up')}>
+                                        <Ionicons name="arrow-up" size={22} color="#888" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => handleMovePaso(index, 'down')}>
+                                        <Ionicons name="arrow-down" size={22} color="#888" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => handleStartEdit(index)}>
+                                        <Ionicons name="pencil" size={18} color="#007BFF" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => handleRemovePaso(index)}>
+                                        <Ionicons name="close" size={22} color="#FF3B30" />
                                     </TouchableOpacity>
                                 </View>
-                                <View style={styles.mediaCol}>
-                                    <Text style={styles.mediaLabel}>Video (opcional)</Text>
-                                    <TouchableOpacity style={styles.mediaIcon}>
-                                        <Ionicons name="logo-youtube" size={40} color="#222" />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </View>
-                    ))}
-                    <TouchableOpacity
-                        style={styles.addStepButton}
-                        onPress={() => setPasos([...pasos, { descripcion: '', imagen: null, video: null }])}
-                    >
-                        <Text style={styles.addStepText}>Agregar paso</Text>
-                    </TouchableOpacity>
-                    <View style={styles.buttonRow}>
-                        <TouchableOpacity style={styles.outlineButton} onPress={() => router.replace('/views/cargar-receta-2')}>
-                            <Text style={styles.outlineButtonText}>Atrás</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.outlineButton} onPress={handleSiguiente}>
-                            <Text style={styles.outlineButtonText}>Siguiente</Text>
-                        </TouchableOpacity>
+                            </>
+                        )}
                     </View>
-                </ScrollView>
-            </View>
+                ))}
+
+                {pasos.length > 0 && (
+                    <View style={styles.summaryContainer}>
+                        <Text style={styles.summaryText}>📝 Tu receta tiene {pasos.length} pasos</Text>
+                    </View>
+                )}
+                 <View style={styles.buttonRow}>
+                    <TouchableOpacity style={styles.outlineButton} onPress={() => router.replace('/views/cargar-receta-2')}>
+                        <Text style={styles.outlineButtonText}>Atrás</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.outlineButton, { opacity: pasos.length < 2 ? 0.5 : 1 }]} onPress={handleSiguiente} disabled={pasos.length < 2}>
+                        <Text style={styles.outlineButtonText}>Siguiente</Text>
+                    </TouchableOpacity>
+                </View>
+
+            </ScrollView>
             <View style={styles.bottomNav}>
                 <TouchableOpacity onPress={() => router.replace('/views/home')}>
                     <Ionicons name="home-outline" size={32} color="#FF7B6B" />
@@ -105,17 +156,23 @@ export default function CargarRecetaPasosScreen() {
                 <Ionicons name="restaurant-outline" size={32} color="#FF7B6B" />
                 <Ionicons name="person" size={32} color="#FF7B6B" />
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
+    container: {
+        flexGrow: 1,
+        backgroundColor: '#f8f9fa',
+        padding: 20,
+        paddingBottom: 100,
+    },
     headerContainer: {
         backgroundColor: '#333',
         borderBottomLeftRadius: 40,
         borderBottomRightRadius: 40,
         paddingTop: 60,
-        paddingBottom: 40,
+        paddingBottom: 20,
         alignItems: 'center',
         paddingHorizontal: 20,
     },
@@ -124,88 +181,120 @@ const styles = StyleSheet.create({
         fontSize: 36,
         fontWeight: 'bold',
     },
-    bodyContainer: {
-        marginTop: 40,
-        paddingHorizontal: 0,
-    },
     backButton: {
-        alignSelf: 'flex-start',
-        marginLeft: 30,
-        marginBottom: 20,
+        position: 'absolute',
+        top: -60,
+        left: 20,
         backgroundColor: '#222',
         borderRadius: 24,
         width: 48,
         height: 48,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 5,
+        zIndex: 10,
     },
-    pasosTitle: {
-        fontSize: 20,
-        color: 'black',
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#333',
         textAlign: 'center',
-        marginBottom: 24,
-        fontWeight: '500',
     },
-    label: {
-        fontSize: 18,
-        fontWeight: '500',
-        marginBottom: 8,
-        color: 'black',
-        marginLeft: 30,
-    },
-    textarea: {
-        backgroundColor: '#E5E5E5',
-        borderRadius: 20,
-        paddingHorizontal: 20,
-        paddingVertical: 18,
+    subtitle: {
         fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
         marginBottom: 20,
-        color: 'black',
-        minHeight: 100,
-        textAlignVertical: 'top',
-        marginHorizontal: 30,
     },
-    mediaRow: {
+    addStepContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-evenly',
-        marginBottom: 10,
+        marginBottom: 20,
     },
-    mediaCol: {
-        alignItems: 'center',
-    },
-    mediaLabel: {
+    input: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: '#007BFF',
+        borderRadius: 12,
+        paddingHorizontal: 15,
+        paddingVertical: 12,
         fontSize: 16,
-        color: 'black',
-        marginBottom: 6,
+        backgroundColor: 'white',
     },
-    mediaIcon: {
-        backgroundColor: '#E5E5E5',
-        borderRadius: 10,
-        width: 60,
-        height: 60,
-        alignItems: 'center',
+    addButton: {
+        backgroundColor: '#FF7B6B',
+        borderRadius: 12,
+        padding: 12,
+        marginLeft: 10,
         justifyContent: 'center',
+        alignItems: 'center',
     },
-    addStepButton: {
-        alignSelf: 'center',
-        marginVertical: 18,
+    addButtonText: {
+        color: 'white',
+        fontSize: 24,
+        fontWeight: 'bold',
     },
-    addStepText: {
-        color: 'black',
+    stepContainer: {
+        backgroundColor: 'white',
+        borderRadius: 12,
+        padding: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1.41,
+    },
+    stepNumber: {
+        backgroundColor: '#FF7B6B',
+        borderRadius: 20,
+        width: 30,
+        height: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 15,
+    },
+    stepNumberText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    stepText: {
+        flex: 1,
+        fontSize: 16,
+        color: '#333',
+    },
+    stepActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 15,
+    },
+    editView: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    editInput: {
+        flex: 1,
+        borderBottomWidth: 1,
+        borderColor: '#007BFF',
+        fontSize: 16,
+    },
+    summaryContainer: {
+        marginTop: 20,
+        backgroundColor: '#FFF8E1',
+        borderRadius: 12,
+        padding: 15,
+        alignItems: 'center',
+    },
+    summaryText: {
+        color: '#F57C00',
+        fontSize: 16,
         fontWeight: '500',
-        fontSize: 18,
-        textDecorationLine: 'underline',
     },
     buttonRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 10,
-        marginHorizontal: 30,
+        justifyContent: 'space-around',
+        marginTop: 30,
     },
     outlineButton: {
         backgroundColor: 'white',
@@ -220,7 +309,7 @@ const styles = StyleSheet.create({
     outlineButtonText: {
         color: 'black',
         fontWeight: 'bold',
-        fontSize: 20,
+        fontSize: 18,
     },
     bottomNav: {
         flexDirection: 'row',
@@ -234,5 +323,10 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
 }); 
