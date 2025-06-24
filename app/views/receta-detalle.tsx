@@ -1,8 +1,8 @@
 import { StyleSheet, View, TouchableOpacity, Image, SafeAreaView, ScrollView, TextInput, Alert, FlatList } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useEffect, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import StarRating from '@/components/StarRating';
 
@@ -22,8 +22,13 @@ export default function RecetaDetalleScreen() {
     const [porcionesInput, setPorcionesInput] = useState('1');
     const [ingredientesInput, setIngredientesInput] = useState<string[]>([]);
     const [valoraciones, setValoraciones] = useState<any>({ promedio: 0, total_valoraciones: 0 });
+    const [valoracionesLoaded, setValoracionesLoaded] = useState(false);
 
     useEffect(() => {
+        // Resetear estados de valoraciones cuando cambia la receta
+        setValoraciones({ promedio: 0, total_valoraciones: 0 });
+        setValoracionesLoaded(false);
+        
         const fetchReceta = async () => {
             if (params.id) {
                 setLoading(true);
@@ -74,7 +79,7 @@ export default function RecetaDetalleScreen() {
     }, [usuarioId, receta?.id]);
 
     useEffect(() => {
-        // Traer comentarios
+        // Traer comentarios solo al montar el componente
         const fetchComentarios = async () => {
             if (!params.id) return;
             const res = await fetch(`https://expo-app-tpo.vercel.app/api/comentarios?receta_id=${params.id}`);
@@ -82,17 +87,36 @@ export default function RecetaDetalleScreen() {
             setComentarios(data.comentarios || []);
         };
         
-        // Traer valoraciones
-        const fetchValoraciones = async () => {
-            if (!params.id) return;
-            const res = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?action=valoraciones&receta_id=${params.id}`);
-            const data = await res.json();
-            setValoraciones(data);
-        };
-        
         fetchComentarios();
-        fetchValoraciones();
     }, [params.id]);
+
+    // Usar useFocusEffect para actualizar valoraciones cada vez que se enfoque la pantalla
+    useFocusEffect(
+        useCallback(() => {
+            let isActive = true;
+            
+            const fetchValoraciones = async () => {
+                if (!params.id) return;
+                try {
+                    const res = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?action=valoraciones&receta_id=${params.id}`);
+                    const data = await res.json();
+                    console.log('Valoraciones data (focus):', data); // Debug log
+                    if (isActive) {
+                        setValoraciones(data);
+                        setValoracionesLoaded(true);
+                    }
+                } catch (error) {
+                    console.error('Error fetching valoraciones:', error);
+                }
+            };
+            
+            fetchValoraciones();
+            
+            return () => {
+                isActive = false;
+            };
+        }, [params.id])
+    );
 
     useEffect(() => {
         setIngredientesInput(ingredientes.map(ing => ing.cantidad?.toString() || ''));
@@ -214,16 +238,18 @@ export default function RecetaDetalleScreen() {
                         <ThemedText style={styles.categoryText}>{receta.categoria}</ThemedText>
                         
                         {/* Valoraciones */}
-                        <View style={styles.valoracionesContainer}>
-                            <StarRating 
-                                rating={parseFloat(valoraciones.promedio) || 0}
-                                readonly={true}
-                                size={20}
-                                showText={true}
-                                totalReviews={valoraciones.total_valoraciones}
-                                style={{ marginBottom: 10 }}
-                            />
-                        </View>
+                        {valoracionesLoaded && (
+                            <View style={styles.valoracionesContainer}>
+                                <StarRating 
+                                    rating={parseFloat(valoraciones.promedio) || 0}
+                                    readonly={true}
+                                    size={20}
+                                    showText={true}
+                                    totalReviews={valoraciones.total_valoraciones || 0}
+                                    style={{ marginBottom: 10 }}
+                                />
+                            </View>
+                        )}
                         
                         {receta.descripcion ? (
                             <ThemedText style={styles.descripcionText}>{receta.descripcion}</ThemedText>

@@ -71,22 +71,34 @@ export default function StarRating({
         }
     };
 
+    // Verificar si no hay valoraciones (más robusto)
+    const hasNoRatings = !totalReviews || totalReviews === 0 || Number(totalReviews) === 0;
+
     return (
         <View style={[styles.container, style]}>
-            <View style={styles.starsContainer}>
-                {[0, 1, 2, 3, 4].map(renderStar)}
-            </View>
-            {showText && (
-                <View style={styles.textContainer}>
-                    <ThemedText style={styles.ratingText}>
-                        {rating.toFixed(1)}
-                    </ThemedText>
-                    {totalReviews !== undefined && (
-                        <ThemedText style={styles.reviewsText}>
-                            ({totalReviews} {totalReviews === 1 ? 'valoración' : 'valoraciones'})
-                        </ThemedText>
+            {hasNoRatings && showText ? (
+                // Solo mostrar texto cuando no hay valoraciones
+                <ThemedText style={styles.noRatingText}>
+                    Sin Valoraciones
+                </ThemedText>
+            ) : (
+                <>
+                    <View style={styles.starsContainer}>
+                        {[0, 1, 2, 3, 4].map(renderStar)}
+                    </View>
+                    {showText && (
+                        <View style={styles.textContainer}>
+                            <ThemedText style={styles.ratingText}>
+                                {rating.toFixed(1)}
+                            </ThemedText>
+                            {totalReviews !== undefined && (
+                                <ThemedText style={styles.reviewsText}>
+                                    ({totalReviews} {totalReviews === 1 ? 'valoración' : 'valoraciones'})
+                                </ThemedText>
+                            )}
+                        </View>
                     )}
-                </View>
+                </>
             )}
         </View>
     );
@@ -124,5 +136,11 @@ const styles = StyleSheet.create({
     reviewsText: {
         fontSize: 14,
         color: '#666',
+    },
+    noRatingText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#999',
+        fontStyle: 'italic',
     },
 }); 

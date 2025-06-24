@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 
 export default function EditarRecetaScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const [receta, setReceta] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+    const [nuevaImagen, setNuevaImagen] = useState<string | null>(null);
+    const [subiendoImagen, setSubiendoImagen] = useState(false);
 
     useEffect(() => {
         if (params.receta) {
@@ -19,17 +23,90 @@ export default function EditarRecetaScreen() {
         }
     }, [params.receta]);
 
+    const seleccionarImagen = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [4, 3],
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+                setNuevaImagen(result.assets[0].uri);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'No se pudo seleccionar la imagen');
+        }
+    };
+
+    const subirImagen = async () => {
+        if (!nuevaImagen) return null;
+
+        setSubiendoImagen(true);
+        try {
+            // Convertir imagen a base64
+            const base64 = await FileSystem.readAsStringAsync(nuevaImagen, {
+                encoding: 'base64',
+            });
+
+            const response = await fetch('https://expo-app-tpo.vercel.app/api/upload-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    image: base64,
+                    filename: `receta_${receta.id}_${Date.now()}.jpg`,
+                }),
+            });
+
+            const data = await response.json();
+            if (response.ok && data.url) {
+                return data.url;
+            } else {
+                throw new Error(data.error || 'Error al subir imagen');
+            }
+        } catch (error) {
+            console.error('Error subiendo imagen:', error);
+            Alert.alert('Error', 'No se pudo subir la imagen');
+            return null;
+        } finally {
+            setSubiendoImagen(false);
+        }
+    };
+
     const handleGuardar = async () => {
         setLoading(true);
         try {
+            let imagenUrl = receta.imagen_url;
+
+            // Si hay una nueva imagen, subirla primero
+            if (nuevaImagen) {
+                const urlSubida = await subirImagen();
+                if (urlSubida) {
+                    imagenUrl = urlSubida;
+                } else {
+                    // Si falló la subida de imagen, no continuar
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            // Actualizar receta con la nueva URL de imagen
+            const recetaActualizada = {
+                ...receta,
+                imagen_url: imagenUrl
+            };
+
             const response = await fetch(`https://expo-app-tpo.vercel.app/api/recetas/${receta.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(receta),
+                body: JSON.stringify(recetaActualizada),
             });
             const data = await response.json();
             if (response.ok && data.success) {
-                Alert.alert('Éxito', 'Receta actualizada');
+                Alert.alert('Éxito', 'Receta actualizada correctamente');
                 router.replace('/views/editar-mis-recetas');
             } else {
                 Alert.alert('Error', data.error || 'No se pudo actualizar la receta');
@@ -53,7 +130,11 @@ export default function EditarRecetaScreen() {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Editar receta</Text>
             </View>
-            <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+            <ScrollView 
+                style={{ flex: 1 }}
+                contentContainerStyle={{ paddingBottom: 120 }}
+                showsVerticalScrollIndicator={false}
+            >
                 <View style={styles.formContainer}>
                     <Text style={styles.label}>Nombre de la receta</Text>
                     <TextInput
@@ -74,14 +155,51 @@ export default function EditarRecetaScreen() {
                         onChangeText={v => setReceta((r: any) => ({ ...r, descripcion: v }))}
                         multiline
                     />
+                    
+                    {/* Sección de imagen */}
+                    <Text style={styles.label}>Imagen de la receta</Text>
+                    <View style={styles.imagenContainer}>
+                        {(nuevaImagen || receta.imagen_url) ? (
+                            <View style={styles.imagenPreview}>
+                                <Image 
+                                    source={{ uri: nuevaImagen || receta.imagen_url }} 
+                                    style={styles.imagenReceta}
+                                />
+                                <TouchableOpacity 
+                                    style={styles.cambiarImagenBtn}
+                                    onPress={seleccionarImagen}
+                                    disabled={subiendoImagen}
+                                >
+                                    <Ionicons name="camera" size={20} color="white" />
+                                    <Text style={styles.cambiarImagenText}>
+                                        {nuevaImagen ? 'Cambiar imagen' : 'Cambiar imagen'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <TouchableOpacity 
+                                style={styles.seleccionarImagenBtn}
+                                onPress={seleccionarImagen}
+                                disabled={subiendoImagen}
+                            >
+                                <Ionicons name="camera-outline" size={40} color="#FF7B6B" />
+                                <Text style={styles.seleccionarImagenText}>
+                                    {subiendoImagen ? 'Subiendo...' : 'Agregar imagen'}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
                     <TouchableOpacity style={styles.editButton} onPress={() => router.push({ pathname: '/views/editar-receta-ingredientes', params: { receta: JSON.stringify(receta) } })}>
                         <Text style={styles.editButtonText}>Editar ingredientes</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.editButton} onPress={() => router.push({ pathname: '/views/editar-receta-pasos', params: { receta: JSON.stringify(receta) } })}>
                         <Text style={styles.editButtonText}>Editar pasos</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.guardarButton} onPress={handleGuardar} disabled={loading}>
-                        <Text style={styles.guardarButtonText}>{loading ? 'Guardando...' : 'Guardar cambios'}</Text>
+                    <TouchableOpacity style={[styles.guardarButton, { marginBottom: 30 }]} onPress={handleGuardar} disabled={loading || subiendoImagen}>
+                        <Text style={styles.guardarButtonText}>
+                            {loading ? 'Guardando...' : subiendoImagen ? 'Subiendo imagen...' : 'Guardar cambios'}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -158,7 +276,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
-        paddingVertical: 18,
+        paddingVertical: 15,
+        paddingBottom: 25,
         borderTopLeftRadius: 40,
         borderTopRightRadius: 40,
         backgroundColor: 'white',
@@ -166,6 +285,11 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
     editButton: {
         backgroundColor: '#E5E5E5',
@@ -185,5 +309,51 @@ const styles = StyleSheet.create({
         top: 50,
         zIndex: 10,
         padding: 8,
+    },
+    imagenContainer: {
+        marginBottom: 20,
+        alignItems: 'center',
+    },
+    imagenPreview: {
+        position: 'relative',
+        alignItems: 'center',
+    },
+    imagenReceta: {
+        width: 200,
+        height: 150,
+        borderRadius: 15,
+        marginBottom: 10,
+    },
+    cambiarImagenBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FF7B6B',
+        borderRadius: 20,
+        paddingHorizontal: 15,
+        paddingVertical: 8,
+        gap: 5,
+    },
+    cambiarImagenText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    seleccionarImagenBtn: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#F5F5F5',
+        borderRadius: 15,
+        borderWidth: 2,
+        borderColor: '#FF7B6B',
+        borderStyle: 'dashed',
+        paddingVertical: 30,
+        paddingHorizontal: 40,
+        minHeight: 120,
+    },
+    seleccionarImagenText: {
+        color: '#FF7B6B',
+        fontWeight: 'bold',
+        fontSize: 16,
+        marginTop: 8,
     },
 }); 

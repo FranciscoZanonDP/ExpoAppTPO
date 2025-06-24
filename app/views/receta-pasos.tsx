@@ -19,6 +19,11 @@ export default function RecetaPasosScreen() {
     const [valoracionEnviada, setValoracionEnviada] = useState(false);
 
     useEffect(() => {
+        // Resetear estados cuando cambia la receta
+        setMiValoracion(0);
+        setValoracionEnviada(false);
+        setShowValoracionModal(false);
+        
         const fetchReceta = async () => {
             if (!params.id) return;
             setLoading(true);
@@ -60,7 +65,9 @@ export default function RecetaPasosScreen() {
     };
 
     const handleFinalizar = () => {
-        if (usuarioId && !valoracionEnviada) {
+        if (usuarioId) {
+            // Siempre mostrar modal de valoración si hay usuario
+            // Permitir tanto crear nueva valoración como editar existente
             setShowValoracionModal(true);
         } else {
             router.back();
@@ -85,7 +92,8 @@ export default function RecetaPasosScreen() {
             if (res.ok) {
                 setValoracionEnviada(true);
                 setShowValoracionModal(false);
-                Alert.alert('¡Gracias!', 'Tu valoración ha sido enviada correctamente.', [
+                const mensaje = valoracionEnviada ? 'Tu valoración ha sido actualizada correctamente.' : 'Tu valoración ha sido enviada correctamente.';
+                Alert.alert('¡Gracias!', mensaje, [
                     { text: 'OK', onPress: () => router.back() }
                 ]);
             } else {
@@ -206,7 +214,9 @@ export default function RecetaPasosScreen() {
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
                             <ThemedText style={styles.modalTitle}>¡Receta completada!</ThemedText>
-                            <ThemedText style={styles.modalSubtitle}>¿Cómo te pareció esta receta?</ThemedText>
+                            <ThemedText style={styles.modalSubtitle}>
+                                {valoracionEnviada ? '¿Quieres cambiar tu valoración?' : '¿Cómo te pareció esta receta?'}
+                            </ThemedText>
                         </View>
                         
                         <View style={styles.valoracionSection}>
@@ -241,7 +251,9 @@ export default function RecetaPasosScreen() {
                                 onPress={handleEnviarValoracion}
                                 disabled={miValoracion === 0}
                             >
-                                <ThemedText style={styles.enviarBtnText}>Enviar</ThemedText>
+                                <ThemedText style={styles.enviarBtnText}>
+                                    {valoracionEnviada ? 'Actualizar' : 'Enviar'}
+                                </ThemedText>
                             </TouchableOpacity>
                         </View>
                     </View>
