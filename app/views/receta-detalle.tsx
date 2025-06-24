@@ -196,6 +196,39 @@ export default function RecetaDetalleScreen() {
         setIngredientesInput(nuevosIngredientes.map(ing => ing.cantidad?.toString() || ''));
     };
 
+    // Función para guardar receta ajustada localmente (máximo 10)
+    const guardarRecetaAjustada = async () => {
+        try {
+            const recetaAjustada = {
+                id: receta.id,
+                nombre: receta.nombre,
+                usuario_nombre: receta.usuario_nombre,
+                categoria: receta.categoria,
+                descripcion: receta.descripcion,
+                imagen_url: receta.imagen_url,
+                ingredientes: ingredientes,
+                porciones: porciones,
+                fecha: Date.now(),
+            };
+            const key = 'recetasAjustadas';
+            const guardadasStr = await AsyncStorage.getItem(key);
+            let guardadas = [];
+            if (guardadasStr) guardadas = JSON.parse(guardadasStr);
+            // Si ya existe una receta con el mismo id y porciones, reemplazarla
+            guardadas = guardadas.filter((r: any) => !(r.id === recetaAjustada.id && r.porciones === recetaAjustada.porciones));
+            // Si hay más de 9, eliminar la más antigua
+            if (guardadas.length >= 10) {
+                guardadas.sort((a: any, b: any) => a.fecha - b.fecha);
+                guardadas.shift();
+            }
+            guardadas.push(recetaAjustada);
+            await AsyncStorage.setItem(key, JSON.stringify(guardadas));
+            Alert.alert('¡Listo!', 'Receta ajustada guardada localmente.');
+        } catch (e) {
+            Alert.alert('Error', 'No se pudo guardar la receta ajustada.');
+        }
+    };
+
     if (loading || !receta) {
         return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}><ThemedText>Cargando...</ThemedText></View>;
     }
@@ -290,6 +323,11 @@ export default function RecetaDetalleScreen() {
                                 </View>
                             ))}
                         </View>
+                        {/* Botón para guardar receta ajustada localmente */}
+                        <TouchableOpacity style={[styles.empezarBtn, { backgroundColor: '#FF7B6B', marginBottom: 10 }]} onPress={guardarRecetaAjustada}>
+                            <ThemedText style={styles.empezarBtnText}>Guardar receta ajustada</ThemedText>
+                        </TouchableOpacity>
+                        {/* Fin botón guardar */}
                         <TouchableOpacity style={styles.empezarBtn} onPress={() => router.push({ pathname: '/views/receta-pasos', params: { id: receta.id } })}>
                             <ThemedText style={styles.empezarBtnText}>Empezar</ThemedText>
                         </TouchableOpacity>
