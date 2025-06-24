@@ -13,7 +13,7 @@ const cursos = {
     curso2: {
         titulo: 'Curso de Pastas',
         autor: 'Zanon',
-        imagen: require('../../assets/images/curso_pastas.jpg'),
+        imagen: require('../../assets/images/helado.jpg'),
         inicio: '15-08-25',
         cierre: '15-10-25',
         clases: 'Jue - 20hs',

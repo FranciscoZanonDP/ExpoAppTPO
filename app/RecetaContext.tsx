@@ -76,4 +76,7 @@ export const RecetaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
 };
 
-export const useReceta = () => useContext(RecetaContext); 
+export const useReceta = () => useContext(RecetaContext);
+
+// Export default para evitar warnings de Expo Router
+export default RecetaContext; 

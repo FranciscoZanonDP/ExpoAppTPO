@@ -1,10 +1,14 @@
-import { StyleSheet, View, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Image, Modal, Pressable } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Image, Modal, Pressable, Alert } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import NetworkWarning from '@/components/NetworkWarning';
+import SyncStatus from '@/components/SyncStatus';
+import BottomNavbar from '@/components/BottomNavbar';
 
 const DEFAULT_IMAGE = "https://media.istockphoto.com/id/1409329028/es/vector/no-hay-imagen-disponible-marcador-de-posici%C3%B3n-miniatura-icono-dise%C3%B1o-de-ilustraci%C3%B3n.jpg?s=612x612&w=0&k=20&c=Bd89b8CBr-IXx9mBbTidc-wu_gtIj8Py_EMr3hGGaPw=";
 
@@ -21,11 +25,35 @@ export default function HomeScreen() {
   const [order, setOrder] = useState('asc');
   const [modalVisible, setModalVisible] = useState(false);
   const [errorConexion, setErrorConexion] = useState(false);
+  const [showNetworkWarning, setShowNetworkWarning] = useState(false);
+  const [userPrefersWifi, setUserPrefersWifi] = useState(false);
+
+  // Hook para gestión de red
+  const { 
+    networkStatus, 
+    shouldShowDataWarning, 
+    addPendingSync, 
+    cacheData, 
+    getCachedData, 
+    isOffline,
+    getPendingSyncCount,
+    isSyncing,
+    syncPendingData
+  } = useNetworkStatus();
 
   const fetchRecetas = async () => {
     setLoadingRecetas(true);
     setErrorConexion(false);
+    
     try {
+      // Primero intentar obtener datos del cache
+      const cachedRecetas = getCachedData('recetas_populares');
+      if (cachedRecetas && !networkStatus.isConnected) {
+        setRecetasPopulares(cachedRecetas);
+        setLoadingRecetas(false);
+        return;
+      }
+
       const params = new URLSearchParams();
       if (searchText) params.append('nombre', searchText);
       if (categoria) params.append('categoria', categoria);
@@ -35,22 +63,95 @@ export default function HomeScreen() {
       if (sort) params.append('sort', sort);
       if (order) params.append('order', order);
       params.append('limit', '3');
-      params.append('estado', 'aprobada');
-      params.append('sort', 'fecha');
-      params.append('order', 'desc');
-      const res = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?${params.toString()}`);
+      params.append('estado', 'aprobada'); // Solo recetas aprobadas
+      params.append('sort', 'fecha'); // Ordenar por fecha
+      params.append('order', 'desc'); // Orden descendente (más recientes primero)
+      
+      const url = `https://expo-app-tpo.vercel.app/api/recetas?${params.toString()}`;
+      console.log('🌐 Intentando cargar datos desde:', url);
+      
+      const res = await fetch(url);
       const data = await res.json();
+      
       if (res.ok && data.recetas) {
         setRecetasPopulares(data.recetas);
+        // Guardar en cache para uso offline
+        await cacheData('recetas_populares', data.recetas, 2); // Cache por 2 horas
+        console.log('✅ Datos cargados exitosamente');
       } else {
         setRecetasPopulares([]);
+        console.log('❌ No se pudieron cargar datos del servidor');
       }
     } catch (err) {
-      setRecetasPopulares([]);
-      setErrorConexion(true);
+      console.log('🚨 Error al cargar datos:', err);
+      // Si hay error de red, intentar usar cache
+      const cachedRecetas = getCachedData('recetas_populares');
+      if (cachedRecetas) {
+        setRecetasPopulares(cachedRecetas);
+        console.log('📱 Usando datos en cache debido a error de red');
+      } else {
+        setRecetasPopulares([]);
+        setErrorConexion(true);
+        console.log('❌ No hay datos en cache disponibles');
+      }
+      
+      // Guardar la petición fallida para sincronizar después
+      if (networkStatus.isConnected) {
+        addPendingSync('fetch', 'https://expo-app-tpo.vercel.app/api/recetas', { 
+          action: 'fetchRecetas', 
+          params: { searchText, categoria, limit: 3, estado: 'aprobada' } 
+        });
+      }
     }
     setLoadingRecetas(false);
   };
+
+  // Cargar preferencia del usuario sobre WiFi
+  useEffect(() => {
+    const loadUserPreference = async () => {
+      try {
+        const preference = await AsyncStorage.getItem('userPrefersWifi');
+        setUserPrefersWifi(preference === 'true');
+      } catch (error) {
+        console.error('Error loading user preference:', error);
+      }
+    };
+    loadUserPreference();
+  }, []);
+
+  // Verificar tipo de red y mostrar advertencia si es necesario
+  useEffect(() => {
+    console.log('🔍 Verificando estado de red:', {
+      shouldShowDataWarning: shouldShowDataWarning(),
+      isOffline: isOffline(),
+      showNetworkWarning,
+      userPrefersWifi,
+      networkStatus
+    });
+
+    // Solo mostrar advertencia si:
+    // 1. Hay datos móviles (no offline)
+    // 2. El modal no está ya visible
+    // 3. El usuario no ha elegido continuar previamente (userPrefersWifi !== false)
+    // 4. La app ya está cargada (no bloquear carga inicial)
+    if (shouldShowDataWarning() && !isOffline() && !showNetworkWarning && userPrefersWifi !== false) {
+      console.log('⚠️ Mostrando modal de advertencia de red');
+      // Pequeño delay para asegurar que la app esté cargada
+      setTimeout(() => {
+        setShowNetworkWarning(true);
+      }, 1000);
+    }
+  }, [networkStatus, shouldShowDataWarning, showNetworkWarning, userPrefersWifi, isOffline]);
+
+  // Efecto adicional para detectar cambios de red en tiempo real
+  useEffect(() => {
+    console.log('📡 Estado de red actualizado:', {
+      isConnected: networkStatus.isConnected,
+      isWifi: networkStatus.isWifi,
+      isMobileData: networkStatus.isMobileData,
+      type: networkStatus.type
+    });
+  }, [networkStatus]);
 
   useFocusEffect(
     useCallback(() => {
@@ -90,8 +191,70 @@ export default function HomeScreen() {
       }
       return;
     }
-    // Otros tabs pueden ir aquí
+    
+    if (tab === 'search') {
+      // Navegar a la pantalla de búsqueda de recetas
+      router.push('/views/recetas-ver-mas');
+      return;
+    }
+    
+    if (tab === 'recipes') {
+      // Navegar a la pantalla de recetas
+      router.push('/views/recetas-ver-mas');
+      return;
+    }
+    
+    // Para otros tabs, mantener la funcionalidad actual
+    console.log('Tab no implementado:', tab);
   };
+
+  const handleContinueWithMobileData = async () => {
+    setShowNetworkWarning(false);
+    // Guardar preferencia del usuario
+    try {
+      await AsyncStorage.setItem('userPrefersWifi', 'false');
+      setUserPrefersWifi(false);
+    } catch (error) {
+      console.error('Error saving user preference:', error);
+    }
+    // Continuar con la carga de datos
+    fetchRecetas();
+  };
+
+  const handleWaitForWifi = async () => {
+    setShowNetworkWarning(false);
+    // Guardar preferencia del usuario
+    try {
+      await AsyncStorage.setItem('userPrefersWifi', 'true');
+      setUserPrefersWifi(true);
+    } catch (error) {
+      console.error('Error saving user preference:', error);
+    }
+    // No cargar datos, esperar a WiFi
+  };
+
+  // Función para resetear preferencias cuando cambie la red
+  const resetNetworkPreferences = async () => {
+    try {
+      await AsyncStorage.removeItem('userPrefersWifi');
+      setUserPrefersWifi(false);
+      console.log('🔄 Preferencias de red reseteadas');
+    } catch (error) {
+      console.error('Error resetting network preferences:', error);
+    }
+  };
+
+  // Efecto para resetear preferencias cuando cambie el tipo de red
+  useEffect(() => {
+    const resetPreferences = async () => {
+      // Solo resetear si ya hay datos cargados y cambia a datos móviles
+      if (networkStatus.isMobileData && networkStatus.isConnected && recetasPopulares.length > 0) {
+        await resetNetworkPreferences();
+      }
+    };
+    
+    resetPreferences();
+  }, [networkStatus.isMobileData, networkStatus.isConnected, recetasPopulares.length]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -190,7 +353,7 @@ export default function HomeScreen() {
               {/* Curso 2 */}
               <TouchableOpacity style={styles.recipeCard} onPress={() => router.push({ pathname: '/views/curso-detalle', params: { id: 'curso2' } })}>
                 <Image
-                  source={require('../../assets/images/curso_pastas.jpg')}
+                  source={require('../../assets/images/helado.jpg')}
                   style={styles.recipeImage}
                 />
                 <View style={styles.recipeInfo}>
@@ -215,43 +378,25 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
 
-        {/* Footer con íconos de navegación */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.footerTab}
-            onPress={() => handleTabPress('home')}
-          >
-            <Ionicons name="home" size={24} color="#FF7B6B" />
-          </TouchableOpacity>
+        {/* Indicador de estado de sincronización */}
+        <SyncStatus
+          pendingSyncCount={getPendingSyncCount()}
+          isSyncing={isSyncing}
+          isOffline={isOffline()}
+          onSyncPress={syncPendingData}
+        />
 
-          <TouchableOpacity
-            style={styles.footerTab}
-            onPress={() => handleTabPress('search')}
-          >
-            <Ionicons name="search" size={24} color="#AAAAAA" />
-          </TouchableOpacity>
+        {/* Navegación inferior */}
+        <BottomNavbar currentScreen="home" />
 
-          <TouchableOpacity
-            style={styles.footerTab}
-            onPress={() => handleTabPress('recipes')}
-          >
-            <Ionicons name="restaurant" size={24} color="#AAAAAA" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.footerTab}
-            onPress={() => router.push('/views/sedes')}
-          >
-            <Ionicons name="location" size={24} color="#AAAAAA" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.footerTab}
-            onPress={() => handleTabPress('profile')}
-          >
-            <Ionicons name="person" size={24} color="#AAAAAA" />
-          </TouchableOpacity>
-        </View>
+        {/* Modal de advertencia de red */}
+        <NetworkWarning
+          visible={showNetworkWarning}
+          onContinue={handleContinueWithMobileData}
+          onWaitForWifi={handleWaitForWifi}
+          pendingSyncCount={getPendingSyncCount()}
+          isOffline={isOffline()}
+        />
       </View>
     </SafeAreaView>
   );
@@ -388,5 +533,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginHorizontal: 2,
     height: 40,
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
   },
 });

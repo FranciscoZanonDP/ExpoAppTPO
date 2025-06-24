@@ -15,7 +15,7 @@ const cursos = {
     curso2: {
         titulo: 'Curso de Pastas',
         autor: 'Zanon',
-        imagen: require('../../assets/images/curso_pastas.jpg'),
+        imagen: require('../../assets/images/helado.jpg'),
         horario: 'Jue-20hs',
         precio: '$30.000',
     },

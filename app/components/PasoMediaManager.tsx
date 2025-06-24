@@ -297,4 +297,7 @@ const styles = StyleSheet.create({
         color: '#666',
         textAlign: 'center',
     },
-}); 
+});
+
+// Export default para evitar warnings de Expo Router
+export default PasoMediaManager; 

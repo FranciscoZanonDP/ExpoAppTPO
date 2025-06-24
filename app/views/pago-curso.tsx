@@ -66,7 +66,7 @@ const cursos = {
                 promociones: '10% de descuento pagando en efectivo',
             },
         ],
-        imagen: require('../../assets/images/curso_pastas.jpg'),
+        imagen: require('../../assets/images/helado.jpg'),
     },
     curso3: {
         titulo: 'Curso de Cocina Saludable',

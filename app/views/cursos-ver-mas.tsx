@@ -40,7 +40,7 @@ export default function CursosVerMasScreen() {
                                 <ThemedText style={styles.cardSubtitle}>Zanonin</ThemedText>
                             </View>
                             <View style={styles.card}>
-                                <Image source={require('../../assets/images/curso_pastas.jpg')} style={styles.cardImage} />
+                                <Image source={require('../../assets/images/helado.jpg')} style={styles.cardImage} />
                                 <ThemedText style={styles.cardTitle}>Cómo hacer pastas..</ThemedText>
                                 <ThemedText style={styles.cardSubtitle}>Duki CO</ThemedText>
                             </View>
