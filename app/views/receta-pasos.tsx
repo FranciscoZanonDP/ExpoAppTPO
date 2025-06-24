@@ -1,8 +1,10 @@
-import { StyleSheet, View, TouchableOpacity, SafeAreaView, ScrollView, Text, Linking, Image } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, SafeAreaView, ScrollView, Text, Linking, Image, Modal, Alert } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import StarRating from '@/components/StarRating';
 
 export default function RecetaPasosScreen() {
     const router = useRouter();
@@ -11,6 +13,10 @@ export default function RecetaPasosScreen() {
     const [loading, setLoading] = useState(true);
     const [expanded, setExpanded] = useState<number>(0);
     const [estadoPasos, setEstadoPasos] = useState<string[]>([]);
+    const [usuarioId, setUsuarioId] = useState<string | null>(null);
+    const [showValoracionModal, setShowValoracionModal] = useState(false);
+    const [miValoracion, setMiValoracion] = useState(0);
+    const [valoracionEnviada, setValoracionEnviada] = useState(false);
 
     useEffect(() => {
         const fetchReceta = async () => {
@@ -22,15 +28,76 @@ export default function RecetaPasosScreen() {
             setEstadoPasos(Array(data.pasos?.length || 0).fill('Pendiente'));
             setLoading(false);
         };
+        
+        const fetchUsuario = async () => {
+            const usuarioStr = await AsyncStorage.getItem('usuario');
+            if (usuarioStr) {
+                const usuario = JSON.parse(usuarioStr);
+                setUsuarioId(usuario.id);
+            }
+        };
+        
         fetchReceta();
+        fetchUsuario();
     }, [params.id]);
+
+    useEffect(() => {
+        // Verificar si el usuario ya valoró esta receta
+        const fetchMiValoracion = async () => {
+            if (!usuarioId || !params.id) return;
+            const res = await fetch(`https://expo-app-tpo.vercel.app/api/valoraciones?receta_id=${params.id}&usuario_id=${usuarioId}`);
+            const data = await res.json();
+            if (data.valoracion) {
+                setMiValoracion(data.valoracion.puntuacion);
+                setValoracionEnviada(true);
+            }
+        };
+        fetchMiValoracion();
+    }, [usuarioId, params.id]);
 
     const handleExpand = (idx: number) => {
         setExpanded(expanded === idx ? -1 : idx);
     };
 
     const handleFinalizar = () => {
-        router.back(); // O navega a donde quieras después de finalizar
+        if (usuarioId && !valoracionEnviada) {
+            setShowValoracionModal(true);
+        } else {
+            router.back();
+        }
+    };
+
+    const handleEnviarValoracion = async () => {
+        if (!usuarioId || !params.id || miValoracion === 0) return;
+        
+        try {
+            const res = await fetch('https://expo-app-tpo.vercel.app/api/valoraciones', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    receta_id: params.id,
+                    usuario_id: usuarioId,
+                    puntuacion: miValoracion
+                })
+            });
+            
+            if (res.ok) {
+                setValoracionEnviada(true);
+                setShowValoracionModal(false);
+                Alert.alert('¡Gracias!', 'Tu valoración ha sido enviada correctamente.', [
+                    { text: 'OK', onPress: () => router.back() }
+                ]);
+            } else {
+                Alert.alert('Error', 'No se pudo enviar la valoración');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'No se pudo enviar la valoración');
+        }
+    };
+
+    const handleSaltarValoracion = () => {
+        setShowValoracionModal(false);
+        router.back();
     };
 
     const handleVerVideo = (url: string) => {
@@ -126,6 +193,59 @@ export default function RecetaPasosScreen() {
                     <ThemedText style={styles.finalizarBtnText}>Finalizar</ThemedText>
                 </TouchableOpacity>
             </View>
+
+            {/* Modal de Valoración */}
+            <Modal
+                visible={showValoracionModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowValoracionModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <ThemedText style={styles.modalTitle}>¡Receta completada!</ThemedText>
+                            <ThemedText style={styles.modalSubtitle}>¿Cómo te pareció esta receta?</ThemedText>
+                        </View>
+                        
+                        <View style={styles.valoracionSection}>
+                            <StarRating 
+                                rating={miValoracion}
+                                onRating={setMiValoracion}
+                                readonly={false}
+                                size={40}
+                                style={{ marginVertical: 20 }}
+                            />
+                            {miValoracion > 0 && (
+                                <ThemedText style={styles.valoracionTexto}>
+                                    {miValoracion === 1 && "No me gustó"}
+                                    {miValoracion === 2 && "Podría mejorar"}
+                                    {miValoracion === 3 && "Está bien"}
+                                    {miValoracion === 4 && "Me gustó mucho"}
+                                    {miValoracion === 5 && "¡Excelente!"}
+                                </ThemedText>
+                            )}
+                        </View>
+
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity 
+                                style={styles.saltarBtn} 
+                                onPress={handleSaltarValoracion}
+                            >
+                                <ThemedText style={styles.saltarBtnText}>Saltar</ThemedText>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                style={[styles.enviarBtn, { opacity: miValoracion > 0 ? 1 : 0.5 }]} 
+                                onPress={handleEnviarValoracion}
+                                disabled={miValoracion === 0}
+                            >
+                                <ThemedText style={styles.enviarBtnText}>Enviar</ThemedText>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -202,6 +322,77 @@ const styles = StyleSheet.create({
     finalizarBtnText: {
         color: 'white',
         fontSize: 18,
+        fontWeight: 'bold',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 30,
+        width: '85%',
+        maxWidth: 400,
+        alignItems: 'center',
+    },
+    modalHeader: {
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    modalTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    modalSubtitle: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+    },
+    valoracionSection: {
+        alignItems: 'center',
+        marginVertical: 20,
+    },
+    valoracionTexto: {
+        fontSize: 16,
+        color: '#FF7B6B',
+        fontWeight: 'bold',
+        marginTop: 10,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginTop: 20,
+        gap: 15,
+    },
+    saltarBtn: {
+        flex: 1,
+        backgroundColor: '#E0E0E0',
+        borderRadius: 25,
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    saltarBtnText: {
+        color: '#666',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    enviarBtn: {
+        flex: 1,
+        backgroundColor: '#FF7B6B',
+        borderRadius: 25,
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    enviarBtnText: {
+        color: 'white',
+        fontSize: 16,
         fontWeight: 'bold',
     },
 }); 

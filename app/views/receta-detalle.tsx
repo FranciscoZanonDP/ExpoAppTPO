@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import StarRating from '@/components/StarRating';
 
 export default function RecetaDetalleScreen() {
     const router = useRouter();
@@ -20,6 +21,7 @@ export default function RecetaDetalleScreen() {
     const [ingredientes, setIngredientes] = useState<any[]>([]);
     const [porcionesInput, setPorcionesInput] = useState('1');
     const [ingredientesInput, setIngredientesInput] = useState<string[]>([]);
+    const [valoraciones, setValoraciones] = useState<any>({ promedio: 0, total_valoraciones: 0 });
 
     useEffect(() => {
         const fetchReceta = async () => {
@@ -79,7 +81,17 @@ export default function RecetaDetalleScreen() {
             const data = await res.json();
             setComentarios(data.comentarios || []);
         };
+        
+        // Traer valoraciones
+        const fetchValoraciones = async () => {
+            if (!params.id) return;
+            const res = await fetch(`https://expo-app-tpo.vercel.app/api/valoraciones?receta_id=${params.id}`);
+            const data = await res.json();
+            setValoraciones(data);
+        };
+        
         fetchComentarios();
+        fetchValoraciones();
     }, [params.id]);
 
     useEffect(() => {
@@ -200,6 +212,19 @@ export default function RecetaDetalleScreen() {
                         <ThemedText style={styles.authorText}>By {receta.usuario_nombre}</ThemedText>
                         <ThemedText style={styles.titleText}>{receta.nombre}</ThemedText>
                         <ThemedText style={styles.categoryText}>{receta.categoria}</ThemedText>
+                        
+                        {/* Valoraciones */}
+                        <View style={styles.valoracionesContainer}>
+                            <StarRating 
+                                rating={parseFloat(valoraciones.promedio) || 0}
+                                readonly={true}
+                                size={20}
+                                showText={true}
+                                totalReviews={valoraciones.total_valoraciones}
+                                style={{ marginBottom: 10 }}
+                            />
+                        </View>
+                        
                         {receta.descripcion ? (
                             <ThemedText style={styles.descripcionText}>{receta.descripcion}</ThemedText>
                         ) : null}
@@ -416,5 +441,9 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 16,
         marginTop: 4,
+    },
+    valoracionesContainer: {
+        alignItems: 'center',
+        marginVertical: 8,
     },
 }); 
