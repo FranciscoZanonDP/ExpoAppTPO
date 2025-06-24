@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useReceta } from '../RecetaContext';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 
 export default function CargarReceta1Screen() {
     const router = useRouter();
@@ -11,17 +13,90 @@ export default function CargarReceta1Screen() {
     const [nombre, setNombre] = useState(receta.nombre || '');
     const [categoria, setCategoria] = useState(receta.categoria || '');
     const [descripcion, setDescripcion] = useState(receta.descripcion || '');
+    const [imagenUrl, setImagenUrl] = useState(receta.imagen_url || '');
     const [tocado, setTocado] = useState(false);
+    const [subiendoImagen, setSubiendoImagen] = useState(false);
 
     useEffect(() => {
         if (params.reset) {
             setNombre('');
             setCategoria('');
             setDescripcion('');
+            setImagenUrl('');
             setTocado(false);
             resetReceta();
         }
     }, [params.reset]);
+
+    const seleccionarImagen = async () => {
+        try {
+            // Pedir permisos
+            const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            
+            if (permissionResult.granted === false) {
+                Alert.alert('Permisos requeridos', 'Necesitamos permisos para acceder a tus fotos');
+                return;
+            }
+
+            // Seleccionar imagen
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [4, 3],
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+                subirImagenABlob(result.assets[0]);
+            }
+        } catch (error) {
+            console.error('Error al seleccionar imagen:', error);
+            Alert.alert('Error', 'No se pudo seleccionar la imagen');
+        }
+    };
+
+    const subirImagenABlob = async (asset: ImagePicker.ImagePickerAsset) => {
+        try {
+            setSubiendoImagen(true);
+            
+            // Convertir imagen a base64
+            const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+            
+            // Crear el formato de data URL
+            const imageData = `data:image/jpeg;base64,${base64}`;
+            
+            // Generar nombre de archivo
+            const fileName = `receta-${Date.now()}.jpg`;
+            
+            // Enviar al servidor
+            const response = await fetch('https://expo-app-tpo.vercel.app/api/upload-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    imageData,
+                    fileName,
+                }),
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                setImagenUrl(result.url);
+                Alert.alert('Éxito', 'Imagen subida correctamente');
+            } else {
+                throw new Error(result.error || 'Error desconocido');
+            }
+        } catch (error) {
+            console.error('Error al subir imagen:', error);
+            Alert.alert('Error', 'No se pudo subir la imagen');
+        } finally {
+            setSubiendoImagen(false);
+        }
+    };
 
     const handleSiguiente = () => {
         setTocado(true);
@@ -31,6 +106,7 @@ export default function CargarReceta1Screen() {
                 nombre,
                 categoria,
                 descripcion,
+                imagen_url: imagenUrl,
             }));
             router.push({ pathname: '/views/cargar-receta-2', params: { reset: '1' } });
         }
@@ -71,6 +147,25 @@ export default function CargarReceta1Screen() {
                         value={descripcion}
                         onChangeText={setDescripcion}
                     />
+                    
+                    <Text style={styles.label}>Imagen de la receta</Text>
+                    <TouchableOpacity 
+                        style={styles.imagenContainer} 
+                        onPress={seleccionarImagen}
+                        disabled={subiendoImagen}
+                    >
+                        {imagenUrl ? (
+                            <Image source={{ uri: imagenUrl }} style={styles.imagenPreview} />
+                        ) : (
+                            <View style={styles.imagenPlaceholder}>
+                                <Ionicons name="camera" size={32} color="#BDBDBD" />
+                                <Text style={styles.imagenPlaceholderText}>
+                                    {subiendoImagen ? 'Subiendo imagen...' : 'Toca para agregar imagen'}
+                                </Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                    
                     <TouchableOpacity style={styles.siguienteButton} onPress={handleSiguiente}>
                         <Text style={styles.siguienteButtonText}>Siguiente</Text>
                     </TouchableOpacity>
@@ -104,7 +199,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     bodyContainer: {
-        marginTop: 40,
+        marginTop: 20,
         paddingHorizontal: 0,
     },
     backButton: {
@@ -124,7 +219,7 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     formContainer: {
-        marginTop: 30,
+        marginTop: 0,
         paddingHorizontal: 30,
     },
     label: {
@@ -152,6 +247,33 @@ const styles = StyleSheet.create({
         color: 'black',
         minHeight: 100,
         textAlignVertical: 'top',
+    },
+    imagenContainer: {
+        backgroundColor: '#E5E5E5',
+        borderRadius: 20,
+        padding: 10,
+        marginBottom: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 120,
+    },
+    imagenPreview: {
+        width: 100,
+        height: 100,
+        borderRadius: 10,
+        resizeMode: 'cover',
+    },
+    imagenPlaceholder: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    imagenPlaceholderText: {
+        color: '#BDBDBD',
+        fontSize: 14,
+        fontWeight: '500',
+        textAlign: 'center',
+        marginTop: 8,
     },
     siguienteButton: {
         backgroundColor: 'white',

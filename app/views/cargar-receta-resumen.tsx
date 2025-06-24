@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Dimensions, Animated, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useReceta } from '../RecetaContext';
@@ -81,6 +81,14 @@ export default function CargarRecetaResumenScreen() {
                 <Text style={styles.resumenTitle}>Resumen</Text>
                 <Text style={styles.nombreReceta}>{receta.nombre}</Text>
                 <Text style={styles.categoriaReceta}>{receta.categoria}</Text>
+                
+                {/* Imagen de la receta */}
+                {receta.imagen_url && (
+                    <View style={styles.imagenContainer}>
+                        <Image source={{ uri: receta.imagen_url }} style={styles.imagenReceta} />
+                    </View>
+                )}
+                
                 {/* Carrusel Ingredientes */}
                 <Text style={styles.ingredientesTitle}>Ingredientes ({receta.ingredientes.length})</Text>
                 <View style={styles.carouselContainer}>
@@ -344,5 +352,15 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
+    },
+    imagenContainer: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    imagenReceta: {
+        width: 120,
+        height: 120,
+        borderRadius: 15,
+        resizeMode: 'cover',
     },
 }); 
