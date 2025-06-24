@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -14,14 +14,39 @@ export default function EditarRecetaScreen() {
     const [subiendoImagen, setSubiendoImagen] = useState(false);
 
     useEffect(() => {
-        if (params.receta) {
-            try {
-                setReceta(JSON.parse(params.receta as string));
-            } catch {
-                setReceta(null);
+        const cargarReceta = async () => {
+            if (params.receta) {
+                // Si se pasa la receta completa como parámetro
+                try {
+                    setReceta(JSON.parse(params.receta as string));
+                } catch {
+                    setReceta(null);
+                }
+            } else if (params.id) {
+                // Si solo se pasa el ID, cargar la receta completa desde la API
+                try {
+                    setLoading(true);
+                    const response = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?id=${params.id}`);
+                    const data = await response.json();
+                    
+                    if (response.ok && data.id) {
+                        setReceta(data);
+                    } else {
+                        Alert.alert('Error', 'No se pudo cargar la receta');
+                        setReceta(null);
+                    }
+                } catch (error) {
+                    console.error('Error cargando receta:', error);
+                    Alert.alert('Error', 'No se pudo conectar con el servidor');
+                    setReceta(null);
+                } finally {
+                    setLoading(false);
+                }
             }
-        }
-    }, [params.receta]);
+        };
+
+        cargarReceta();
+    }, [params.receta, params.id]);
 
     const seleccionarImagen = async () => {
         try {
@@ -106,8 +131,20 @@ export default function EditarRecetaScreen() {
             });
             const data = await response.json();
             if (response.ok && data.success) {
-                Alert.alert('Éxito', 'Receta actualizada correctamente');
-                router.replace('/views/editar-mis-recetas');
+                Alert.alert('Éxito', 'Receta actualizada correctamente', [
+                    {
+                        text: 'OK',
+                        onPress: () => {
+                            if (params.id) {
+                                // Si vino desde cargar-receta-1, regresar allí
+                                router.replace('/views/cargar-receta-1');
+                            } else {
+                                // Si vino desde editar-mis-recetas, regresar allí
+                                router.replace('/views/editar-mis-recetas');
+                            }
+                        }
+                    }
+                ]);
             } else {
                 Alert.alert('Error', data.error || 'No se pudo actualizar la receta');
             }
@@ -119,13 +156,33 @@ export default function EditarRecetaScreen() {
     };
 
     if (!receta) {
-        return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>No se pudo cargar la receta.</Text></View>;
+        if (loading) {
+            return (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
+                    <ActivityIndicator size="large" color="#FF7B6B" />
+                    <Text style={{ marginTop: 10, fontSize: 16, color: '#666' }}>Cargando receta...</Text>
+                </View>
+            );
+        }
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
+                <Text style={{ fontSize: 16, color: '#666' }}>No se pudo cargar la receta.</Text>
+            </View>
+        );
     }
 
     return (
         <View style={{ flex: 1, backgroundColor: 'white' }}>
             <View style={styles.headerContainer}>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/views/editar-mis-recetas')}>
+                <TouchableOpacity style={styles.backButton} onPress={() => {
+                    // Si vino desde cargar-receta-1 (cuando se pasa ID), regresar allí
+                    if (params.id) {
+                        router.replace('/views/cargar-receta-1');
+                    } else {
+                        // Si vino desde editar-mis-recetas (cuando se pasa receta completa), regresar allí
+                        router.replace('/views/editar-mis-recetas');
+                    }
+                }}>
                     <Ionicons name="arrow-back" size={28} color="white" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Editar receta</Text>

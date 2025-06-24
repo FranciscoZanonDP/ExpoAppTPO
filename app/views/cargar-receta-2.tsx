@@ -18,6 +18,11 @@ export default function CargarReceta2Screen() {
     const [editCantidad, setEditCantidad] = useState('');
     const [editUnidad, setEditUnidad] = useState('');
 
+    useEffect(() => {
+        if (!receta.ingredientes || receta.ingredientes.length === 0) {
+            setIngredientes([]);
+        }
+    }, [receta.ingredientes]);
 
     const handleAddIngrediente = () => {
         if (nombre.trim() && cantidad.trim() && unidad.trim()) {

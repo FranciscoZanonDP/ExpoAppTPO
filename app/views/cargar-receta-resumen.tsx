@@ -54,16 +54,38 @@ export default function CargarRecetaResumenScreen() {
                 usuario_id: usuario.id,
                 email: usuario.email
             };
-            const response = await fetch('https://expo-app-tpo.vercel.app/api/recetas', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(recetaAEnviar),
-            });
+
+            let response;
+            let successMessage;
+
+            if (receta.id) {
+                // Si tiene ID, es un reemplazo - usar PUT
+                response = await fetch(`https://expo-app-tpo.vercel.app/api/recetas/${receta.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(recetaAEnviar),
+                });
+                successMessage = 'Receta reemplazada exitosamente';
+            } else {
+                // Si no tiene ID, es una nueva receta - usar POST
+                response = await fetch('https://expo-app-tpo.vercel.app/api/recetas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(recetaAEnviar),
+                });
+                successMessage = 'Receta creada exitosamente';
+            }
+
             const data = await response.json();
             if (response.ok && data.success) {
-                router.push('/views/cargar-receta-exito');
+                Alert.alert('¡Éxito!', successMessage, [
+                    {
+                        text: 'OK',
+                        onPress: () => router.push('/views/cargar-receta-exito')
+                    }
+                ]);
             } else {
-                Alert.alert('Error', data.error || 'No se pudo crear la receta');
+                Alert.alert('Error', data.error || `No se pudo ${receta.id ? 'reemplazar' : 'crear'} la receta`);
             }
         } catch (err) {
             Alert.alert('Error', 'No se pudo conectar con el servidor');
@@ -78,7 +100,9 @@ export default function CargarRecetaResumenScreen() {
                 <Text style={styles.headerTitle}>Cargar receta</Text>
             </View>
             <ScrollView contentContainerStyle={styles.bodyContainer}>
-                <Text style={styles.resumenTitle}>Resumen</Text>
+                <Text style={styles.resumenTitle}>
+                    {receta.id ? 'Resumen - Reemplazando receta' : 'Resumen'}
+                </Text>
                 <Text style={styles.nombreReceta}>{receta.nombre}</Text>
                 <Text style={styles.categoriaReceta}>{receta.categoria}</Text>
                 
@@ -168,7 +192,9 @@ export default function CargarRecetaResumenScreen() {
                         {loading ? (
                             <ActivityIndicator color="#222" />
                         ) : (
-                            <Text style={styles.outlineButtonText}>Subir receta</Text>
+                            <Text style={styles.outlineButtonText}>
+                                {receta.id ? 'Reemplazar receta' : 'Subir receta'}
+                            </Text>
                         )}
                     </TouchableOpacity>
                 </View>

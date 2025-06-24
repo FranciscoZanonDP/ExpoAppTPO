@@ -14,6 +14,7 @@ export type Paso = {
 };
 
 export type Receta = {
+    id?: number;
     nombre: string;
     categoria: string;
     descripcion: string;
@@ -32,7 +33,7 @@ const RecetaContext = createContext<{
         categoria: '',
         descripcion: '',
         imagen_url: '',
-        ingredientes: [{ nombre: '', cantidad: '', unidad: '' }],
+        ingredientes: [],
         pasos: [{ descripcion: '', imagen: null, video: null }],
     },
     setReceta: () => { },
@@ -45,7 +46,7 @@ export const RecetaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         categoria: '',
         descripcion: '',
         imagen_url: '',
-        ingredientes: [{ nombre: '', cantidad: '', unidad: '' }],
+        ingredientes: [],
         pasos: [{ descripcion: '', imagen: null, video: null }],
     });
 
@@ -55,7 +56,7 @@ export const RecetaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             categoria: '',
             descripcion: '',
             imagen_url: '',
-            ingredientes: [{ nombre: '', cantidad: '', unidad: '' }],
+            ingredientes: [],
             pasos: [{ descripcion: '', imagen: null, video: null }],
         });
     };

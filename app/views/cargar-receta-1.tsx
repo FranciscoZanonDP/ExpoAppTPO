@@ -5,6 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useReceta } from '../RecetaContext';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function CargarReceta1Screen() {
     const router = useRouter();
@@ -98,17 +99,76 @@ export default function CargarReceta1Screen() {
         }
     };
 
-    const handleSiguiente = () => {
+    const handleSiguiente = async () => {
         setTocado(true);
         if (nombre.trim() && categoria.trim() && descripcion.trim()) {
-            setReceta(prev => ({
-                ...prev,
-                nombre,
-                categoria,
-                descripcion,
-                imagen_url: imagenUrl,
-            }));
-            router.push({ pathname: '/views/cargar-receta-2', params: { reset: '1' } });
+            try {
+                // Obtener datos del usuario
+                const usuarioStr = await AsyncStorage.getItem('usuario');
+                if (!usuarioStr) {
+                    Alert.alert('Error', 'No se pudo obtener la información del usuario');
+                    return;
+                }
+                const usuario = JSON.parse(usuarioStr);
+
+                // Verificar si ya existe una receta con el mismo nombre para este usuario
+                const response = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?usuario_id=${usuario.id}&nombre=${encodeURIComponent(nombre.trim())}`);
+                const data = await response.json();
+
+                if (response.ok && data.recetas && data.recetas.length > 0) {
+                    const recetaExistente = data.recetas[0];
+                    
+                    Alert.alert(
+                        'Receta duplicada', 
+                        `Ya tienes una receta llamada "${nombre.trim()}". ¿Qué deseas hacer?`,
+                        [
+                            {
+                                text: 'Cancelar',
+                                style: 'cancel'
+                            },
+                            {
+                                text: 'Editar existente',
+                                onPress: () => {
+                                    // Navegar a editar la receta existente
+                                    router.push({
+                                        pathname: '/views/editar-receta',
+                                        params: { id: recetaExistente.id }
+                                    });
+                                }
+                            },
+                            {
+                                text: 'Reemplazar',
+                                onPress: () => {
+                                    // Continuar con el flujo normal, pero guardando el ID para reemplazar
+                                    setReceta(prev => ({
+                                        ...prev,
+                                        id: recetaExistente.id, // Guardar ID para reemplazar
+                                        nombre,
+                                        categoria,
+                                        descripcion,
+                                        imagen_url: imagenUrl,
+                                    }));
+                                    router.push({ pathname: '/views/cargar-receta-2', params: { reset: '1', reemplazar: 'true' } });
+                                }
+                            }
+                        ]
+                    );
+                    return;
+                }
+
+                // Si no existe, proceder normalmente
+                setReceta(prev => ({
+                    ...prev,
+                    nombre,
+                    categoria,
+                    descripcion,
+                    imagen_url: imagenUrl,
+                }));
+                router.push({ pathname: '/views/cargar-receta-2', params: { reset: '1' } });
+            } catch (error) {
+                console.error('Error al verificar receta duplicada:', error);
+                Alert.alert('Error', 'No se pudo verificar si la receta ya existe. Inténtalo de nuevo.');
+            }
         }
     };
 
