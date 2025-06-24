@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     },
     bodyContainer: {
         paddingTop: 40,
-        paddingBottom: 40,
+        paddingBottom: 120,
         paddingHorizontal: 30,
     },
     resumenTitle: {

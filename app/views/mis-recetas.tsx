@@ -8,7 +8,8 @@ const DEFAULT_IMAGE = "https://media.istockphoto.com/id/1409329028/es/vector/no-
 
 export default function MisRecetasScreen() {
     const router = useRouter();
-    const [recetas, setRecetas] = useState<any[]>([]);
+    const [recetasCargadas, setRecetasCargadas] = useState<any[]>([]);
+    const [recetasEnRevision, setRecetasEnRevision] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [usuario, setUsuario] = useState<any>(null);
 
@@ -25,15 +26,28 @@ export default function MisRecetasScreen() {
                 const usuario = JSON.parse(usuarioStr);
                 setUsuario(usuario);
                 try {
-                    const res = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?usuario_id=${usuario.id}&limit=3`);
-                    const data = await res.json();
-                    if (isActive && res.ok && data.recetas) {
-                        setRecetas(data.recetas);
+                    // Traer recetas en revisión
+                    const resEnRevision = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?usuario_id=${usuario.id}&estado=en_revision&limit=3`);
+                    const dataEnRevision = await resEnRevision.json();
+                    if (isActive && resEnRevision.ok && dataEnRevision.recetas) {
+                        setRecetasEnRevision(dataEnRevision.recetas);
                     } else if (isActive) {
-                        setRecetas([]);
+                        setRecetasEnRevision([]);
+                    }
+
+                    // Traer recetas cargadas (aprobadas)
+                    const resCargadas = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?usuario_id=${usuario.id}&estado=aprobada&limit=3`);
+                    const dataCargadas = await resCargadas.json();
+                    if (isActive && resCargadas.ok && dataCargadas.recetas) {
+                        setRecetasCargadas(dataCargadas.recetas);
+                    } else if (isActive) {
+                        setRecetasCargadas([]);
                     }
                 } catch (err) {
-                    if (isActive) setRecetas([]);
+                    if (isActive) {
+                        setRecetasEnRevision([]);
+                        setRecetasCargadas([]);
+                    }
                 }
                 if (isActive) setLoading(false);
             };
@@ -58,7 +72,27 @@ export default function MisRecetasScreen() {
                         <Text style={styles.sectionLink}>Ver todas</Text>
                     </TouchableOpacity>
                 </View>
-                {/* Aquí irían las recetas en revisión, por ahora vacío */}
+                {loading ? (
+                    <ActivityIndicator size="large" color="#FF7B6B" style={{ marginTop: 30 }} />
+                ) : recetasEnRevision.length === 0 ? (
+                    <Text style={{ textAlign: 'center', marginTop: 30, color: '#999' }}>No tienes recetas en revisión.</Text>
+                ) : (
+                    <View style={styles.placeholderRow}>
+                        {recetasEnRevision.map((receta: any) => (
+                            <TouchableOpacity key={receta.id} style={styles.placeholderBox} onPress={() => router.push({ pathname: '/views/receta-detalle-mis-recetas', params: { id: receta.id } })}>
+                                <Image 
+                                    source={{ uri: receta.imagen_url || DEFAULT_IMAGE }} 
+                                    style={styles.recetaImage}
+                                    resizeMode="cover"
+                                />
+                                <View style={styles.recetaTextContainer}>
+                                    <Text style={styles.recetaNombre}>{receta.nombre}</Text>
+                                    <Text style={styles.recetaCategoria}>{receta.categoria}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
                 <View style={{ height: 40 }} />
                 <View style={styles.sectionRow}>
                     <Text style={styles.sectionTitle}>Cargadas</Text>
@@ -68,14 +102,14 @@ export default function MisRecetasScreen() {
                 </View>
                 {loading ? (
                     <ActivityIndicator size="large" color="#FF7B6B" style={{ marginTop: 30 }} />
-                ) : recetas.length === 0 ? (
-                    <Text style={{ textAlign: 'center', marginTop: 30, color: '#999' }}>No tienes recetas cargadas.</Text>
+                ) : recetasCargadas.length === 0 ? (
+                    <Text style={{ textAlign: 'center', marginTop: 30, color: '#999' }}>No tienes recetas aprobadas.</Text>
                 ) : (
                     <View style={styles.placeholderRow}>
-                        {recetas.map((receta, idx) => (
+                        {recetasCargadas.map((receta: any) => (
                             <TouchableOpacity key={receta.id} style={styles.placeholderBox} onPress={() => router.push({ pathname: '/views/receta-detalle-mis-recetas', params: { id: receta.id } })}>
                                 <Image 
-                                    source={{ uri: receta.imagen || DEFAULT_IMAGE }} 
+                                    source={{ uri: receta.imagen_url || DEFAULT_IMAGE }} 
                                     style={styles.recetaImage}
                                     resizeMode="cover"
                                 />

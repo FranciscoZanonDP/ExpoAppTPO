@@ -8,7 +8,7 @@ const getRecetas = async (req, res) => {
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Método no permitido' });
     }
-    const { usuario_id, usuario_email, limit, id, nombre, categoria, ingrediente_incluye, ingrediente_excluye, usuario_nombre, sort, order } = req.query;
+    const { usuario_id, usuario_email, limit, id, nombre, categoria, ingrediente_incluye, ingrediente_excluye, usuario_nombre, sort, order, estado } = req.query;
     const client = await pool.connect();
     try {
         console.log('GET /api/recetas - Query params:', req.query);
@@ -72,6 +72,10 @@ const getRecetas = async (req, res) => {
             joinIngredientes = true;
             where.push(`r.id NOT IN (SELECT receta_id FROM ingredientes WHERE LOWER(nombre) LIKE $${params.length + 1})`);
             params.push(`%${ingrediente_excluye.toLowerCase()}%`);
+        }
+        if (estado) {
+            where.push(`r.estado = $${params.length + 1}`);
+            params.push(estado);
         }
         if (joinIngredientes) {
             // Ya se usan subconsultas, no es necesario un JOIN explícito
@@ -181,9 +185,9 @@ module.exports = async (req, res) => {
     try {
         await client.query('BEGIN');
         const recetaResult = await client.query(
-            `INSERT INTO recetas (nombre, categoria, descripcion, usuario_id, email, imagen_url, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING id`,
-            [nombre, categoria, descripcion, usuario_id, email, imagen_url]
+            `INSERT INTO recetas (nombre, categoria, descripcion, usuario_id, email, imagen_url, estado, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING id`,
+            [nombre, categoria, descripcion, usuario_id, email, imagen_url, 'en_revision']
         );
         const receta_id = recetaResult.rows[0].id;
         for (const ing of ingredientes) {
