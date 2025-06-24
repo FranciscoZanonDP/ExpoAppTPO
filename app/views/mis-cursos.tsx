@@ -31,6 +31,7 @@ const cursos = {
 export default function MisCursosScreen() {
     const [misCursos, setMisCursos] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    const [usuario, setUsuario] = useState<any>(null);
     const router = useRouter();
 
     useFocusEffect(
@@ -46,9 +47,11 @@ export default function MisCursosScreen() {
                     }
                     return;
                 }
-                const usuario = JSON.parse(usuarioStr);
+                const usuarioData = JSON.parse(usuarioStr);
+                if (isActive) setUsuario(usuarioData);
+                
                 try {
-                    const res = await fetch(`https://expo-app-tpo.vercel.app/api/inscripciones?usuario_email=${usuario.email}`);
+                    const res = await fetch(`https://expo-app-tpo.vercel.app/api/inscripciones?usuario_email=${usuarioData.email}`);
                     const data = await res.json();
                     if (res.ok && Array.isArray(data.inscripciones)) {
                         if (isActive) setMisCursos(data.inscripciones);
@@ -65,10 +68,23 @@ export default function MisCursosScreen() {
         }, [])
     );
 
+    const handleGoBack = () => {
+        console.log('Usuario completo:', usuario);
+        console.log('UserType del usuario:', usuario?.userType);
+        
+        if (usuario?.userType?.toLowerCase() === 'alumno') {
+            console.log('Navegando a alumno-info');
+            router.replace('/views/alumno-info');
+        } else {
+            console.log('Navegando a user-info');
+            router.replace('/views/user-info');
+        }
+    };
+
     return (
         <View style={{ flex: 1, backgroundColor: '#fff' }}>
             <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/views/home')}>
+                <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
                     <Ionicons name="arrow-back" size={28} color="white" />
                 </TouchableOpacity>
                 <Text style={styles.headerText}>Mis Cursos</Text>

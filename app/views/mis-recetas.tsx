@@ -56,9 +56,26 @@ export default function MisRecetasScreen() {
         }, [])
     );
 
+    const handleGoBack = () => {
+        console.log('Usuario completo:', usuario);
+        console.log('UserType del usuario:', usuario?.userType);
+        console.log('Tipo de userType:', typeof usuario?.userType);
+        
+        if (usuario?.userType?.toLowerCase() === 'alumno') {
+            console.log('Navegando a alumno-info');
+            router.replace('/views/alumno-info');
+        } else {
+            console.log('Navegando a user-info');
+            router.replace('/views/user-info');
+        }
+    };
+
     return (
         <View style={{ flex: 1, backgroundColor: 'white' }}>
             <View style={styles.headerContainer}>
+                <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+                    <Ionicons name="arrow-back" size={28} color="white" />
+                </TouchableOpacity>
                 <Text style={styles.headerTitle}>Mis recetas</Text>
                 <View style={styles.searchBar}>
                     <Text style={styles.searchText}>Buscar</Text>
@@ -68,7 +85,7 @@ export default function MisRecetasScreen() {
             <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>
                 <View style={styles.sectionRow}>
                     <Text style={styles.sectionTitle}>En revisión</Text>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push({ pathname: '/views/todas-mis-recetas', params: { estado: 'en_revision' } })}>
                         <Text style={styles.sectionLink}>Ver todas</Text>
                     </TouchableOpacity>
                 </View>
@@ -96,7 +113,7 @@ export default function MisRecetasScreen() {
                 <View style={{ height: 40 }} />
                 <View style={styles.sectionRow}>
                     <Text style={styles.sectionTitle}>Cargadas</Text>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push({ pathname: '/views/todas-mis-recetas', params: { estado: 'aprobada' } })}>
                         <Text style={styles.sectionLink}>Ver todas</Text>
                     </TouchableOpacity>
                 </View>
@@ -130,14 +147,6 @@ export default function MisRecetasScreen() {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
-            <View style={styles.bottomNav}>
-                <TouchableOpacity onPress={() => router.replace('/views/home')}>
-                    <Ionicons name="home-outline" size={32} color="#FF7B6B" />
-                </TouchableOpacity>
-                <Ionicons name="search-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="restaurant-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="person" size={32} color="#FF7B6B" />
-            </View>
         </View>
     );
 }
@@ -244,17 +253,11 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: 'black',
     },
-    bottomNav: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        paddingVertical: 18,
-        borderTopLeftRadius: 40,
-        borderTopRightRadius: 40,
-        backgroundColor: 'white',
+    backButton: {
         position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
+        left: 20,
+        top: 60,
+        zIndex: 10,
+        padding: 8,
     },
 }); 
