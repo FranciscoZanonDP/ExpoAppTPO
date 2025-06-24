@@ -7,10 +7,18 @@ export type Ingrediente = {
     unidad: string;
 };
 
+export type PasoMedio = {
+    id?: number;
+    tipo: 'imagen' | 'video';
+    url: string;
+    orden: number;
+};
+
 export type Paso = {
     descripcion: string;
     imagen: any;
     video: any;
+    medios: PasoMedio[];
 };
 
 export type Receta = {
@@ -34,7 +42,7 @@ const RecetaContext = createContext<{
         descripcion: '',
         imagen_url: '',
         ingredientes: [],
-        pasos: [{ descripcion: '', imagen: null, video: null }],
+        pasos: [{ descripcion: '', imagen: null, video: null, medios: [] }],
     },
     setReceta: () => { },
     resetReceta: () => { },
@@ -47,7 +55,7 @@ export const RecetaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         descripcion: '',
         imagen_url: '',
         ingredientes: [],
-        pasos: [{ descripcion: '', imagen: null, video: null }],
+        pasos: [{ descripcion: '', imagen: null, video: null, medios: [] }],
     });
 
     const resetReceta = () => {
@@ -57,7 +65,7 @@ export const RecetaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             descripcion: '',
             imagen_url: '',
             ingredientes: [],
-            pasos: [{ descripcion: '', imagen: null, video: null }],
+            pasos: [{ descripcion: '', imagen: null, video: null, medios: [] }],
         });
     };
 

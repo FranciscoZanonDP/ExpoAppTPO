@@ -46,8 +46,27 @@ export default function RecetaDetalleMisRecetasScreen() {
                 { text: 'Cancelar', style: 'cancel' },
                 {
                     text: 'Eliminar', style: 'destructive', onPress: async () => {
-                        await fetch(`https://expo-app-tpo.vercel.app/api/recetas/${receta.id}`, { method: 'DELETE' });
-                        router.replace('/views/mis-recetas');
+                        try {
+                            const response = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?id=${receta.id}`, { 
+                                method: 'DELETE',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                }
+                            });
+                            
+                            const result = await response.json();
+                            
+                            if (response.ok && result.success) {
+                                Alert.alert('Éxito', 'Receta eliminada correctamente', [
+                                    { text: 'OK', onPress: () => router.replace('/views/mis-recetas') }
+                                ]);
+                            } else {
+                                Alert.alert('Error', result.error || 'No se pudo eliminar la receta');
+                            }
+                        } catch (error) {
+                            console.error('Error al eliminar receta:', error);
+                            Alert.alert('Error', 'Error de conexión. Inténtalo de nuevo.');
+                        }
                     }
                 }
             ]

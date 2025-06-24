@@ -231,14 +231,6 @@ export default function CargarReceta1Screen() {
                     </TouchableOpacity>
                 </View>
             </View>
-            <View style={styles.bottomNav}>
-                <TouchableOpacity onPress={() => router.replace('/views/home')}>
-                    <Ionicons name="home-outline" size={32} color="#FF7B6B" />
-                </TouchableOpacity>
-                <Ionicons name="search-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="restaurant-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="person" size={32} color="#FF7B6B" />
-            </View>
         </View>
     );
 }
@@ -348,18 +340,5 @@ const styles = StyleSheet.create({
         color: 'black',
         fontWeight: 'bold',
         fontSize: 20,
-    },
-    bottomNav: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        paddingVertical: 18,
-        borderTopLeftRadius: 40,
-        borderTopRightRadius: 40,
-        backgroundColor: 'white',
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
     },
 }); 

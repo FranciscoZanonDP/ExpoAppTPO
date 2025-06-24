@@ -2,16 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useReceta } from '../RecetaContext';
+import { useReceta, PasoMedio } from '../RecetaContext';
+import { PasoMediaManager } from '../components/PasoMediaManager';
 
 export default function CargarRecetaPasosScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const { receta, setReceta } = useReceta();
-    const [pasos, setPasos] = useState(receta.pasos.length > 0 ? receta.pasos.map(p => p.descripcion) : []);
+    const [pasos, setPasos] = useState(receta.pasos.length > 0 ? receta.pasos.map(p => ({ descripcion: p.descripcion, medios: p.medios || [] })) : []);
     const [nuevoPaso, setNuevoPaso] = useState('');
     const [editIndex, setEditIndex] = useState(-1);
     const [editText, setEditText] = useState('');
+    const [expandedStep, setExpandedStep] = useState<number | null>(null);
 
     useEffect(() => {
         if (params.reset) {
@@ -21,7 +23,7 @@ export default function CargarRecetaPasosScreen() {
 
     const handleAddPaso = () => {
         if (nuevoPaso.trim() !== '') {
-            setPasos([...pasos, nuevoPaso.trim()]);
+            setPasos([...pasos, { descripcion: nuevoPaso.trim(), medios: [] }]);
             setNuevoPaso('');
         }
     };
@@ -30,35 +32,45 @@ export default function CargarRecetaPasosScreen() {
         const nuevosPasos = [...pasos];
         nuevosPasos.splice(index, 1);
         setPasos(nuevosPasos);
-    };
-
-    const handleMovePaso = (index: number, direction: 'up' | 'down') => {
-        if ((direction === 'up' && index === 0) || (direction === 'down' && index === pasos.length - 1)) {
-            return;
+        if (expandedStep === index) {
+            setExpandedStep(null);
+        } else if (expandedStep !== null && expandedStep > index) {
+            setExpandedStep(expandedStep - 1);
         }
-        const nuevosPasos = [...pasos];
-        const newIndex = direction === 'up' ? index - 1 : index + 1;
-        [nuevosPasos[index], nuevosPasos[newIndex]] = [nuevosPasos[newIndex], nuevosPasos[index]];
-        setPasos(nuevosPasos);
     };
 
     const handleStartEdit = (index: number) => {
         setEditIndex(index);
-        setEditText(pasos[index]);
+        setEditText(pasos[index].descripcion);
     };
 
     const handleEndEdit = () => {
         if (editText.trim() !== '') {
             const nuevosPasos = [...pasos];
-            nuevosPasos[editIndex] = editText.trim();
+            nuevosPasos[editIndex] = { ...nuevosPasos[editIndex], descripcion: editText.trim() };
             setPasos(nuevosPasos);
         }
         setEditIndex(-1);
         setEditText('');
     };
 
+    const handleMediosChange = (index: number, medios: PasoMedio[]) => {
+        const nuevosPasos = [...pasos];
+        nuevosPasos[index] = { ...nuevosPasos[index], medios };
+        setPasos(nuevosPasos);
+    };
+
+    const toggleExpandStep = (index: number) => {
+        setExpandedStep(expandedStep === index ? null : index);
+    };
+
     const handleSiguiente = () => {
-        const pasosFinales = pasos.map(p => ({ descripcion: p, imagen: null, video: null }));
+        const pasosFinales = pasos.map(p => ({ 
+            descripcion: p.descripcion, 
+            imagen: null, 
+            video: null,
+            medios: p.medios 
+        }));
         setReceta(prev => ({
             ...prev,
             pasos: pasosFinales,
@@ -110,24 +122,39 @@ export default function CargarRecetaPasosScreen() {
                             </View>
                         ) : (
                             <>
-                                <View style={styles.stepNumber}>
-                                    <Text style={styles.stepNumberText}>{index + 1}</Text>
+                                <View style={styles.stepHeader}>
+                                    <View style={styles.stepNumber}>
+                                        <Text style={styles.stepNumberText}>{index + 1}</Text>
+                                    </View>
+                                    <Text style={styles.stepText}>{paso.descripcion}</Text>
+                                    <View style={styles.stepActions}>
+                                        <TouchableOpacity onPress={() => handleStartEdit(index)}>
+                                            <Ionicons name="pencil" size={18} color="#007BFF" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity onPress={() => toggleExpandStep(index)}>
+                                            <Ionicons 
+                                                name={expandedStep === index ? "chevron-up" : "chevron-down"} 
+                                                size={20} 
+                                                color="#FF7B6B" 
+                                            />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity onPress={() => handleRemovePaso(index)}>
+                                            <Ionicons name="close" size={22} color="#FF3B30" />
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
-                                <Text style={styles.stepText}>{paso}</Text>
-                                <View style={styles.stepActions}>
-                                    <TouchableOpacity onPress={() => handleMovePaso(index, 'up')}>
-                                        <Ionicons name="arrow-up" size={22} color="#888" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity onPress={() => handleMovePaso(index, 'down')}>
-                                        <Ionicons name="arrow-down" size={22} color="#888" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity onPress={() => handleStartEdit(index)}>
-                                        <Ionicons name="pencil" size={18} color="#007BFF" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity onPress={() => handleRemovePaso(index)}>
-                                        <Ionicons name="close" size={22} color="#FF3B30" />
-                                    </TouchableOpacity>
-                                </View>
+                                
+                                {/* Sección expandible para medios */}
+                                {expandedStep === index && (
+                                    <View style={styles.mediaSection}>
+                                        <Text style={styles.mediaSectionTitle}>📸 Fotos y videos del paso</Text>
+                                        <PasoMediaManager
+                                            medios={paso.medios}
+                                            onMediosChange={(medios) => handleMediosChange(index, medios)}
+                                            maxMedios={5}
+                                        />
+                                    </View>
+                                )}
                             </>
                         )}
                     </View>
@@ -148,14 +175,6 @@ export default function CargarRecetaPasosScreen() {
                 </View>
 
             </ScrollView>
-            <View style={styles.bottomNav}>
-                <TouchableOpacity onPress={() => router.replace('/views/home')}>
-                    <Ionicons name="home-outline" size={32} color="#FF7B6B" />
-                </TouchableOpacity>
-                <Ionicons name="search-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="restaurant-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="person" size={32} color="#FF7B6B" />
-            </View>
         </KeyboardAvoidingView>
     );
 }
@@ -236,14 +255,19 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         borderRadius: 12,
         padding: 15,
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: 'column',
         marginBottom: 10,
         elevation: 2,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.2,
         shadowRadius: 1.41,
+        width: '100%',
+    },
+    stepHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '100%',
     },
     stepNumber: {
         backgroundColor: '#FF7B6B',
@@ -311,22 +335,23 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 18,
     },
-    bottomNav: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        paddingVertical: 18,
-        borderTopLeftRadius: 40,
-        borderTopRightRadius: 40,
+    mediaSection: {
+        marginTop: 10,
+        padding: 15,
         backgroundColor: 'white',
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        elevation: 10,
+        borderRadius: 12,
+        elevation: 2,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1.41,
+        width: '100%',
+        alignSelf: 'stretch',
+    },
+    mediaSectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 10,
     },
 }); 

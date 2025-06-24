@@ -39,16 +39,6 @@ export default function CargarReceta2Screen() {
         setIngredientes(nuevosIngredientes);
     };
 
-    const handleMoveIngrediente = (index: number, direction: 'up' | 'down') => {
-        if ((direction === 'up' && index === 0) || (direction === 'down' && index === ingredientes.length - 1)) {
-            return;
-        }
-        const nuevosIngredientes = [...ingredientes];
-        const newIndex = direction === 'up' ? index - 1 : index + 1;
-        [nuevosIngredientes[index], nuevosIngredientes[newIndex]] = [nuevosIngredientes[newIndex], nuevosIngredientes[index]];
-        setIngredientes(nuevosIngredientes);
-    };
-    
     const handleStartEdit = (index: number) => {
         setEditIndex(index);
         const ing = ingredientes[index];
@@ -133,12 +123,6 @@ export default function CargarReceta2Screen() {
                                     <Text style={styles.ingredientQuantity}>{ing.cantidad} {ing.unidad}</Text>
                                 </View>
                                 <View style={styles.ingredientActions}>
-                                    <TouchableOpacity onPress={() => handleMoveIngrediente(index, 'up')}>
-                                        <Ionicons name="arrow-up" size={22} color="#888" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity onPress={() => handleMoveIngrediente(index, 'down')}>
-                                        <Ionicons name="arrow-down" size={22} color="#888" />
-                                    </TouchableOpacity>
                                     <TouchableOpacity onPress={() => handleStartEdit(index)}>
                                         <Ionicons name="pencil" size={18} color="#007BFF" />
                                     </TouchableOpacity>
@@ -165,14 +149,6 @@ export default function CargarReceta2Screen() {
                 </View>
 
             </ScrollView>
-             <View style={styles.bottomNav}>
-                <TouchableOpacity onPress={() => router.replace('/views/home')}>
-                    <Ionicons name="home-outline" size={32} color="#FF7B6B" />
-                </TouchableOpacity>
-                <Ionicons name="search-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="restaurant-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="person" size={32} color="#FF7B6B" />
-            </View>
         </KeyboardAvoidingView>
     );
 }
@@ -365,23 +341,5 @@ const styles = StyleSheet.create({
         color: 'black',
         fontWeight: 'bold',
         fontSize: 18,
-    },
-     bottomNav: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        paddingVertical: 18,
-        borderTopLeftRadius: 40,
-        borderTopRightRadius: 40,
-        backgroundColor: 'white',
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        elevation: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
     },
 });

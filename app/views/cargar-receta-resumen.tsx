@@ -155,6 +155,27 @@ export default function CargarRecetaResumenScreen() {
                     <View style={styles.slideBox}>
                         <Text style={styles.pasoNombre}>{`Paso ${slidePaso + 1}`}</Text>
                         <Text style={styles.pasoDescripcion}>{receta.pasos[slidePaso]?.descripcion || 'Sin descripción'}</Text>
+                        
+                        {/* Mostrar medios del paso actual */}
+                        {receta.pasos[slidePaso]?.medios && receta.pasos[slidePaso].medios.length > 0 && (
+                            <View style={styles.pasoMediosContainer}>
+                                <Text style={styles.pasoMediosTitle}>📸 Medios del paso:</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pasoMediosScroll}>
+                                    {receta.pasos[slidePaso].medios.map((medio, idx) => (
+                                        <View key={idx} style={styles.pasoMedioItem}>
+                                            {medio.tipo === 'imagen' ? (
+                                                <Image source={{ uri: medio.url }} style={styles.pasoMedioPreview} />
+                                            ) : (
+                                                <View style={[styles.pasoMedioPreview, styles.pasoVideoPreview]}>
+                                                    <Ionicons name="play-circle" size={24} color="white" />
+                                                    <Text style={styles.pasoVideoText}>Video</Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        )}
                     </View>
                     <View style={styles.carouselBelowRowFixed}>
                         <View style={styles.arrowFixedBox}>
@@ -199,14 +220,6 @@ export default function CargarRecetaResumenScreen() {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
-            <View style={styles.bottomNav}>
-                <TouchableOpacity onPress={() => router.replace('/views/home')}>
-                    <Ionicons name="home-outline" size={32} color="#FF7B6B" />
-                </TouchableOpacity>
-                <Ionicons name="search-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="restaurant-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="person" size={32} color="#FF7B6B" />
-            </View>
         </View>
     );
 }
@@ -228,7 +241,7 @@ const styles = StyleSheet.create({
     },
     bodyContainer: {
         paddingTop: 40,
-        paddingBottom: 120,
+        paddingBottom: 40,
         paddingHorizontal: 30,
     },
     resumenTitle: {
@@ -366,19 +379,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 20,
     },
-    bottomNav: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        paddingVertical: 18,
-        borderTopLeftRadius: 40,
-        borderTopRightRadius: 40,
-        backgroundColor: 'white',
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-    },
     imagenContainer: {
         alignItems: 'center',
         marginBottom: 20,
@@ -388,5 +388,38 @@ const styles = StyleSheet.create({
         height: 120,
         borderRadius: 15,
         resizeMode: 'cover',
+    },
+    pasoMediosContainer: {
+        marginTop: 10,
+        marginBottom: 10,
+    },
+    pasoMediosTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'black',
+        marginBottom: 5,
+    },
+    pasoMediosScroll: {
+        paddingHorizontal: 10,
+    },
+    pasoMedioItem: {
+        marginRight: 10,
+    },
+    pasoMedioPreview: {
+        width: 100,
+        height: 100,
+        borderRadius: 10,
+        backgroundColor: '#E0E0E0',
+    },
+    pasoVideoPreview: {
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    pasoVideoText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 }); 
