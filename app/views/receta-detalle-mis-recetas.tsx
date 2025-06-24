@@ -173,6 +173,45 @@ export default function RecetaDetalleMisRecetasScreen() {
                                                 <Text style={styles.pasoTitulo}>Paso {idx + 1}</Text>
                                             </View>
                                             <Text style={styles.pasoDescripcion}>{paso.descripcion}</Text>
+                                            
+                                            {/* Mostrar medios múltiples del paso */}
+                                            {paso.medios && paso.medios.length > 0 && (
+                                                <View style={styles.pasoMediaContainer}>
+                                                    <ScrollView 
+                                                        horizontal 
+                                                        showsHorizontalScrollIndicator={false}
+                                                        style={styles.pasoMediaScroll}
+                                                    >
+                                                        {paso.medios.map((medio: any, medioIdx: number) => (
+                                                            <View key={medioIdx} style={styles.pasoMediaItem}>
+                                                                {medio.tipo === 'imagen' ? (
+                                                                    <Image 
+                                                                        source={{ uri: medio.url }} 
+                                                                        style={styles.pasoImagen}
+                                                                        resizeMode="cover"
+                                                                    />
+                                                                ) : (
+                                                                    <View style={[styles.pasoImagen, styles.pasoVideo]}>
+                                                                        <Ionicons name="play-circle" size={40} color="white" />
+                                                                        <Text style={styles.videoLabel}>Video</Text>
+                                                                    </View>
+                                                                )}
+                                                            </View>
+                                                        ))}
+                                                    </ScrollView>
+                                                </View>
+                                            )}
+                                            
+                                            {/* Mostrar imagen tradicional si existe y no hay medios múltiples */}
+                                            {(!paso.medios || paso.medios.length === 0) && paso.imagen_url && (
+                                                <View style={styles.pasoMediaContainer}>
+                                                    <Image 
+                                                        source={{ uri: paso.imagen_url }} 
+                                                        style={styles.pasoImagenSingle}
+                                                        resizeMode="cover"
+                                                    />
+                                                </View>
+                                            )}
                                         </View>
                                     ))
                                 ) : (
@@ -496,5 +535,37 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    pasoMediaContainer: {
+        marginTop: 12,
+    },
+    pasoMediaScroll: {
+        marginVertical: 8,
+    },
+    pasoMediaItem: {
+        marginRight: 12,
+    },
+    pasoImagen: {
+        width: 120,
+        height: 90,
+        borderRadius: 8,
+        backgroundColor: '#f0f0f0',
+    },
+    pasoVideo: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#333',
+    },
+    videoLabel: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: 'bold',
+        marginTop: 4,
+    },
+    pasoImagenSingle: {
+        width: '100%',
+        height: 150,
+        borderRadius: 8,
+        marginTop: 8,
     },
 }); 
