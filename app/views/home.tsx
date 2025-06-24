@@ -20,9 +20,11 @@ export default function HomeScreen() {
   const [sort, setSort] = useState('nombre');
   const [order, setOrder] = useState('asc');
   const [modalVisible, setModalVisible] = useState(false);
+  const [errorConexion, setErrorConexion] = useState(false);
 
   const fetchRecetas = async () => {
     setLoadingRecetas(true);
+    setErrorConexion(false);
     try {
       const params = new URLSearchParams();
       if (searchText) params.append('nombre', searchText);
@@ -33,6 +35,9 @@ export default function HomeScreen() {
       if (sort) params.append('sort', sort);
       if (order) params.append('order', order);
       params.append('limit', '3');
+      params.append('estado', 'aprobada');
+      params.append('sort', 'fecha');
+      params.append('order', 'desc');
       const res = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?${params.toString()}`);
       const data = await res.json();
       if (res.ok && data.recetas) {
@@ -42,6 +47,7 @@ export default function HomeScreen() {
       }
     } catch (err) {
       setRecetasPopulares([]);
+      setErrorConexion(true);
     }
     setLoadingRecetas(false);
   };
@@ -123,7 +129,11 @@ export default function HomeScreen() {
 
           {/* Grid de recetas */}
           <View style={styles.recipesGrid}>
-            {loadingRecetas ? (
+            {errorConexion ? (
+              <ThemedText style={{ textAlign: 'center', color: 'red', marginVertical: 20, fontWeight: 'bold' }}>
+                No se puede usar la aplicación
+              </ThemedText>
+            ) : loadingRecetas ? (
               <ThemedText style={{ textAlign: 'center', color: '#999', marginVertical: 20 }}>Cargando recetas...</ThemedText>
             ) : recetasPopulares.length === 0 ? (
               <ThemedText style={{ textAlign: 'center', color: '#999', marginVertical: 20 }}>No hay recetas populares.</ThemedText>
