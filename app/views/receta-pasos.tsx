@@ -45,7 +45,7 @@ export default function RecetaPasosScreen() {
         // Verificar si el usuario ya valoró esta receta
         const fetchMiValoracion = async () => {
             if (!usuarioId || !params.id) return;
-            const res = await fetch(`https://expo-app-tpo.vercel.app/api/valoraciones?receta_id=${params.id}&usuario_id=${usuarioId}`);
+            const res = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?action=valoraciones&receta_id=${params.id}&usuario_id=${usuarioId}`);
             const data = await res.json();
             if (data.valoracion) {
                 setMiValoracion(data.valoracion.puntuacion);
@@ -71,10 +71,11 @@ export default function RecetaPasosScreen() {
         if (!usuarioId || !params.id || miValoracion === 0) return;
         
         try {
-            const res = await fetch('https://expo-app-tpo.vercel.app/api/valoraciones', {
+            const res = await fetch('https://expo-app-tpo.vercel.app/api/recetas', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    action: 'valoraciones',
                     receta_id: params.id,
                     usuario_id: usuarioId,
                     puntuacion: miValoracion

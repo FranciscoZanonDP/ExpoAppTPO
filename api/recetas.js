@@ -4,10 +4,70 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
 });
 
+const getValoraciones = async (req, res) => {
+    const { receta_id, usuario_id } = req.query;
+    const client = await pool.connect();
+    
+    try {
+        if (!receta_id) {
+            return res.status(400).json({ error: 'Falta receta_id' });
+        }
+
+        if (usuario_id) {
+            // Obtener valoración específica de un usuario para una receta
+            const result = await client.query(
+                'SELECT * FROM valoraciones WHERE receta_id = $1 AND usuario_id = $2',
+                [receta_id, usuario_id]
+            );
+            return res.status(200).json({ 
+                valoracion: result.rows[0] || null 
+            });
+        } else {
+            // Obtener estadísticas de valoración de una receta
+            const result = await client.query(`
+                SELECT 
+                    COUNT(*) as total_valoraciones,
+                    AVG(puntuacion) as promedio,
+                    COUNT(CASE WHEN puntuacion = 1 THEN 1 END) as estrellas_1,
+                    COUNT(CASE WHEN puntuacion = 2 THEN 1 END) as estrellas_2,
+                    COUNT(CASE WHEN puntuacion = 3 THEN 1 END) as estrellas_3,
+                    COUNT(CASE WHEN puntuacion = 4 THEN 1 END) as estrellas_4,
+                    COUNT(CASE WHEN puntuacion = 5 THEN 1 END) as estrellas_5
+                FROM valoraciones 
+                WHERE receta_id = $1
+            `, [receta_id]);
+
+            const stats = result.rows[0];
+            return res.status(200).json({
+                total_valoraciones: parseInt(stats.total_valoraciones),
+                promedio: stats.promedio ? parseFloat(stats.promedio).toFixed(1) : 0,
+                distribucion: {
+                    1: parseInt(stats.estrellas_1),
+                    2: parseInt(stats.estrellas_2),
+                    3: parseInt(stats.estrellas_3),
+                    4: parseInt(stats.estrellas_4),
+                    5: parseInt(stats.estrellas_5)
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error en valoraciones:', error);
+        return res.status(500).json({ error: 'Error interno del servidor' });
+    } finally {
+        client.release();
+    }
+};
+
 const getRecetas = async (req, res) => {
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Método no permitido' });
     }
+    
+    // Si incluye el parámetro 'action=valoraciones', manejar valoraciones
+    if (req.query.action === 'valoraciones') {
+        return getValoraciones(req, res);
+    }
+    
     const { usuario_id, usuario_email, limit, id, nombre, categoria, ingrediente_incluye, ingrediente_excluye, usuario_nombre, sort, order, estado } = req.query;
     const client = await pool.connect();
     try {
@@ -162,19 +222,7 @@ const deleteReceta = async (req, res) => {
     }
 };
 
-module.exports = async (req, res) => {
-    if (req.method === 'GET') {
-        return getRecetas(req, res);
-    }
-    if (req.method === 'PUT') {
-        return updateReceta(req, res);
-    }
-    if (req.method === 'DELETE') {
-        return deleteReceta(req, res);
-    }
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Método no permitido' });
-    }
+const handlePostReceta = async (req, res) => {
     const { nombre, categoria, descripcion, usuario_id, email, imagen_url, ingredientes, pasos } = req.body;
     if (!nombre) return res.status(400).json({ error: 'Falta el nombre de la receta' });
     if (!categoria) return res.status(400).json({ error: 'Falta la categoría' });
@@ -210,4 +258,97 @@ module.exports = async (req, res) => {
     } finally {
         client.release();
     }
+};
+
+const handlePostValoracion = async (req, res) => {
+    const { receta_id, usuario_id, puntuacion } = req.body;
+    const client = await pool.connect();
+    
+    try {
+        if (!receta_id || !usuario_id || !puntuacion) {
+            return res.status(400).json({ error: 'Faltan datos requeridos' });
+        }
+
+        if (puntuacion < 1 || puntuacion > 5) {
+            return res.status(400).json({ error: 'La puntuación debe estar entre 1 y 5' });
+        }
+
+        // Insertar o actualizar valoración
+        const result = await client.query(`
+            INSERT INTO valoraciones (receta_id, usuario_id, puntuacion, updated_at)
+            VALUES ($1, $2, $3, NOW())
+            ON CONFLICT (receta_id, usuario_id)
+            DO UPDATE SET puntuacion = $3, updated_at = NOW()
+            RETURNING *
+        `, [receta_id, usuario_id, puntuacion]);
+
+        return res.status(200).json({ 
+            success: true, 
+            valoracion: result.rows[0] 
+        });
+    } catch (error) {
+        console.error('Error al crear valoración:', error);
+        return res.status(500).json({ error: 'Error interno del servidor' });
+    } finally {
+        client.release();
+    }
+};
+
+const handleDeleteValoracion = async (req, res) => {
+    const { receta_id, usuario_id } = req.body;
+    const client = await pool.connect();
+    
+    try {
+        if (!receta_id || !usuario_id) {
+            return res.status(400).json({ error: 'Faltan datos requeridos' });
+        }
+
+        await client.query(
+            'DELETE FROM valoraciones WHERE receta_id = $1 AND usuario_id = $2',
+            [receta_id, usuario_id]
+        );
+
+        return res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Error al eliminar valoración:', error);
+        return res.status(500).json({ error: 'Error interno del servidor' });
+    } finally {
+        client.release();
+    }
+};
+
+module.exports = async (req, res) => {
+    // Permitir CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    if (req.method === 'GET') {
+        return getRecetas(req, res);
+    }
+    if (req.method === 'PUT') {
+        return updateReceta(req, res);
+    }
+    if (req.method === 'DELETE') {
+        // Si incluye action=valoraciones, manejar eliminación de valoración
+        if (req.body?.action === 'valoraciones') {
+            return handleDeleteValoracion(req, res);
+        }
+        return deleteReceta(req, res);
+    }
+    if (req.method === 'POST') {
+        // Si incluye action=valoraciones, manejar creación/actualización de valoración
+        if (req.body?.action === 'valoraciones') {
+            return handlePostValoracion(req, res);
+        }
+        
+        // Si no, procesar como creación de receta normal
+        return handlePostReceta(req, res);
+    }
+    
+    return res.status(405).json({ error: 'Método no permitido' });
 }; 

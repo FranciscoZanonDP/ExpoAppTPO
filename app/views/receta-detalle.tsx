@@ -85,7 +85,7 @@ export default function RecetaDetalleScreen() {
         // Traer valoraciones
         const fetchValoraciones = async () => {
             if (!params.id) return;
-            const res = await fetch(`https://expo-app-tpo.vercel.app/api/valoraciones?receta_id=${params.id}`);
+            const res = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?action=valoraciones&receta_id=${params.id}`);
             const data = await res.json();
             setValoraciones(data);
         };
