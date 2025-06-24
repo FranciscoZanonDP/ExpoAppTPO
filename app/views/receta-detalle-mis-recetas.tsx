@@ -47,25 +47,38 @@ export default function RecetaDetalleMisRecetasScreen() {
                 {
                     text: 'Eliminar', style: 'destructive', onPress: async () => {
                         try {
-                            const response = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?id=${receta.id}`, { 
+                            console.log('=== DEBUGGING ELIMINACIÓN ===');
+                            console.log('ID de la receta a eliminar:', receta.id);
+                            console.log('Tipo del ID:', typeof receta.id);
+                            
+                            const url = `https://expo-app-tpo.vercel.app/api/recetas?id=${receta.id}`;
+                            console.log('URL de eliminación:', url);
+                            
+                            const response = await fetch(url, { 
                                 method: 'DELETE',
                                 headers: {
                                     'Content-Type': 'application/json',
-                                }
+                                },
+                                body: JSON.stringify({ id: receta.id })
                             });
                             
+                            console.log('Status de respuesta:', response.status);
+                            console.log('Response OK:', response.ok);
+                            
                             const result = await response.json();
+                            console.log('Resultado del servidor:', result);
                             
                             if (response.ok && result.success) {
                                 Alert.alert('Éxito', 'Receta eliminada correctamente', [
                                     { text: 'OK', onPress: () => router.replace('/views/mis-recetas') }
                                 ]);
                             } else {
-                                Alert.alert('Error', result.error || 'No se pudo eliminar la receta');
+                                console.log('Error del servidor:', result.error);
+                                Alert.alert('Error', `Error del servidor: ${result.error || 'No se pudo eliminar la receta'}`);
                             }
                         } catch (error) {
                             console.error('Error al eliminar receta:', error);
-                            Alert.alert('Error', 'Error de conexión. Inténtalo de nuevo.');
+                            Alert.alert('Error', `Error de conexión: ${error instanceof Error ? error.message : 'Error desconocido'}`);
                         }
                     }
                 }
