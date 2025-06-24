@@ -49,6 +49,10 @@ export default function UserInfoScreen() {
                     <Ionicons name="restaurant" size={20} color="#FF7B6B" style={styles.infoIcon} />
                     <ThemedText style={styles.infoItem}>Mis Recetas</ThemedText>
                 </TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push('/views/recetas-ajustadas')} style={styles.infoItemRow}>
+                    <Ionicons name="construct" size={20} color="#FF7B6B" style={styles.infoIcon} />
+                    <ThemedText style={styles.infoItem}>Recetas ajustadas</ThemedText>
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => router.push('/views/cambiar-a-alumno-pago')} style={styles.infoItemRow}>
                     <Ionicons name="refresh" size={20} color="#FF7B6B" style={styles.infoIcon} />
                     <ThemedText style={styles.infoItem}>Cambiar a Alumno</ThemedText>

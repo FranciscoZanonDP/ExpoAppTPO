@@ -43,6 +43,7 @@ export default function RootLayout() {
           <Stack.Screen name="forgot-password" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="+not-found" />
+          <Stack.Screen name="recetas-ajustadas" />
         </Stack>
         <StatusBar style="light" />
       </ThemeProvider>
