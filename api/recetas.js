@@ -157,13 +157,19 @@ const getRecetas = async (req, res) => {
         // Ordenamiento seguro
         let validSorts = ['fecha', 'usuario', 'nombre'];
         let orderBy = 'r.nombre ASC';
-        let orderDir = (order && order.toLowerCase() === 'desc') ? 'DESC' : 'ASC';
-        if (sort && validSorts.includes(sort)) {
-            if (sort === 'fecha') {
+        
+        // Manejar el caso donde order puede ser un array
+        let orderParam = Array.isArray(order) ? order[0] : order;
+        let orderDir = (orderParam && orderParam.toLowerCase() === 'desc') ? 'DESC' : 'ASC';
+        
+        // Manejar el caso donde sort puede ser un array
+        let sortParam = Array.isArray(sort) ? sort[0] : sort;
+        if (sortParam && validSorts.includes(sortParam)) {
+            if (sortParam === 'fecha') {
                 orderBy = `r.created_at ${orderDir}`;
-            } else if (sort === 'usuario') {
+            } else if (sortParam === 'usuario') {
                 orderBy = `u.nombre ${orderDir}`;
-            } else if (sort === 'nombre') {
+            } else if (sortParam === 'nombre') {
                 orderBy = `r.nombre ${orderDir}`;
             }
         }
