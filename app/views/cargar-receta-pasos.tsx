@@ -123,14 +123,14 @@ export default function CargarRecetaPasosScreen() {
                         ) : (
                             <>
                                 <View style={styles.stepHeader}>
-                                    <View style={styles.stepNumber}>
-                                        <Text style={styles.stepNumberText}>{index + 1}</Text>
-                                    </View>
+                                <View style={styles.stepNumber}>
+                                    <Text style={styles.stepNumberText}>{index + 1}</Text>
+                                </View>
                                     <Text style={styles.stepText}>{paso.descripcion}</Text>
-                                    <View style={styles.stepActions}>
-                                        <TouchableOpacity onPress={() => handleStartEdit(index)}>
-                                            <Ionicons name="pencil" size={18} color="#007BFF" />
-                                        </TouchableOpacity>
+                                <View style={styles.stepActions}>
+                                    <TouchableOpacity onPress={() => handleStartEdit(index)}>
+                                        <Ionicons name="pencil" size={18} color="#007BFF" />
+                                    </TouchableOpacity>
                                         <TouchableOpacity onPress={() => toggleExpandStep(index)}>
                                             <Ionicons 
                                                 name={expandedStep === index ? "chevron-up" : "chevron-down"} 
@@ -138,9 +138,9 @@ export default function CargarRecetaPasosScreen() {
                                                 color="#FF7B6B" 
                                             />
                                         </TouchableOpacity>
-                                        <TouchableOpacity onPress={() => handleRemovePaso(index)}>
-                                            <Ionicons name="close" size={22} color="#FF3B30" />
-                                        </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => handleRemovePaso(index)}>
+                                        <Ionicons name="close" size={22} color="#FF3B30" />
+                                    </TouchableOpacity>
                                     </View>
                                 </View>
                                 

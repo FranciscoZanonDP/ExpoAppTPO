@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import BottomNavbar from '@/components/BottomNavbar';
 
 const sedesMock = [
   {
@@ -100,6 +101,9 @@ export default function SedesScreen() {
           </View>
         )}
       </ScrollView>
+      
+      {/* Footer unificado */}
+      <BottomNavbar currentScreen="recipes" />
     </View>
   );
 }

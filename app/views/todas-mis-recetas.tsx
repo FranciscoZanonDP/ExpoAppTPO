@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BottomNavbar from '@/components/BottomNavbar';
 
 const DEFAULT_IMAGE = "https://media.istockphoto.com/id/1409329028/es/vector/no-hay-imagen-disponible-marcador-de-posici%C3%B3n-miniatura-icono-dise%C3%B1o-de-ilustraci%C3%B3n.jpg?s=612x612&w=0&k=20&c=Bd89b8CBr-IXx9mBbTidc-wu_gtIj8Py_EMr3hGGaPw=";
 
@@ -139,14 +140,8 @@ export default function TodasMisRecetasScreen() {
                 )}
             </ScrollView>
 
-            <View style={styles.bottomNav}>
-                <TouchableOpacity onPress={() => router.replace('/views/home')}>
-                    <Ionicons name="home-outline" size={32} color="#FF7B6B" />
-                </TouchableOpacity>
-                <Ionicons name="search-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="restaurant-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="person" size={32} color="#FF7B6B" />
-            </View>
+            {/* Footer unificado */}
+            <BottomNavbar currentScreen="recipes" />
         </View>
     );
 }
@@ -276,23 +271,5 @@ const styles = StyleSheet.create({
         color: '#999',
         textAlign: 'right',
     },
-    bottomNav: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        paddingVertical: 15,
-        paddingBottom: 25,
-        borderTopLeftRadius: 40,
-        borderTopRightRadius: 40,
-        backgroundColor: 'white',
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-    },
+
 }); 

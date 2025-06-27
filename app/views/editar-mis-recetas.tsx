@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BottomNavbar from '@/components/BottomNavbar';
 
 export default function EditarMisRecetasScreen() {
     const router = useRouter();
@@ -81,14 +82,8 @@ export default function EditarMisRecetasScreen() {
                     </View>
                 )}
             </ScrollView>
-            <View style={styles.bottomNav}>
-                <TouchableOpacity onPress={() => router.replace('/views/home')}>
-                    <Ionicons name="home-outline" size={32} color="#FF7B6B" />
-                </TouchableOpacity>
-                <Ionicons name="search-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="restaurant-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="person" size={32} color="#FF7B6B" />
-            </View>
+            {/* Footer unificado */}
+            <BottomNavbar currentScreen="recipes" />
         </View>
     );
 }
@@ -129,19 +124,7 @@ const styles = StyleSheet.create({
         color: '#333',
         fontSize: 16,
     },
-    bottomNav: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        paddingVertical: 18,
-        borderTopLeftRadius: 40,
-        borderTopRightRadius: 40,
-        backgroundColor: 'white',
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-    },
+
     backButton: {
         position: 'absolute',
         left: 10,

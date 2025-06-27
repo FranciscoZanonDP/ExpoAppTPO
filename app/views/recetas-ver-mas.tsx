@@ -1,12 +1,14 @@
 import { StyleSheet, View, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Image, Modal, Pressable } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
 import { Picker } from '@react-native-picker/picker';
+import BottomNavbar from '@/components/BottomNavbar';
 
 export default function RecetasVerMasScreen() {
     const router = useRouter();
+    const params = useLocalSearchParams();
     const [searchText, setSearchText] = useState('');
     const [recetas, setRecetas] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -17,21 +19,34 @@ export default function RecetasVerMasScreen() {
     const [sort, setSort] = useState('nombre');
     const [order, setOrder] = useState('asc');
     const [modalVisible, setModalVisible] = useState(false);
+    
+    // Determinar si viene desde "Recetas populares"
+    const esRecetasPopulares = params.tipo === 'populares';
+    const tituloHeader = esRecetasPopulares ? 'Recetas aprobadas' : 'Recetas';
 
     const fetchRecetas = async () => {
         setLoading(true);
         try {
-            const params = new URLSearchParams();
+            const urlParams = new URLSearchParams();
             if (searchText) {
-                params.append('nombre', searchText);
-                params.append('usuario_nombre', searchText);
+                urlParams.append('nombre', searchText);
+                urlParams.append('usuario_nombre', searchText);
             }
-            if (categoria) params.append('categoria', categoria);
-            if (ingredienteIncluye) params.append('ingrediente_incluye', ingredienteIncluye);
-            if (ingredienteExcluye) params.append('ingrediente_excluye', ingredienteExcluye);
-            if (sort) params.append('sort', sort);
-            if (order) params.append('order', order);
-            const res = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?${params.toString()}`);
+            if (categoria) urlParams.append('categoria', categoria);
+            if (ingredienteIncluye) urlParams.append('ingrediente_incluye', ingredienteIncluye);
+            if (ingredienteExcluye) urlParams.append('ingrediente_excluye', ingredienteExcluye);
+            if (sort) urlParams.append('sort', sort);
+            if (order) urlParams.append('order', order);
+            
+            // Si viene desde "Recetas populares", filtrar solo por estado aprobada
+            if (esRecetasPopulares) {
+                urlParams.append('estado', 'aprobada');
+                console.log('🔍 Filtrando por recetas aprobadas');
+            }
+            
+            const url = `https://expo-app-tpo.vercel.app/api/recetas?${urlParams.toString()}`;
+            console.log('🌐 URL de consulta:', url);
+            const res = await fetch(url);
             const data = await res.json();
             if (res.ok && data.recetas) {
                 setRecetas(data.recetas);
@@ -49,7 +64,7 @@ export default function RecetasVerMasScreen() {
             let isActive = true;
             fetchRecetas();
             return () => { isActive = false; };
-        }, [searchText, categoria, ingredienteIncluye, ingredienteExcluye, usuario, sort, order])
+        }, [searchText, categoria, ingredienteIncluye, ingredienteExcluye, usuario, sort, order, esRecetasPopulares])
     );
 
     const handleSearch = (text: string) => setSearchText(text);
@@ -68,7 +83,7 @@ export default function RecetasVerMasScreen() {
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                         <Ionicons name="arrow-back" size={28} color="white" />
                     </TouchableOpacity>
-                    <ThemedText style={styles.headerTitle}>Recetas</ThemedText>
+                    <ThemedText style={styles.headerTitle}>{tituloHeader}</ThemedText>
                     <View style={styles.searchContainer}>
                         <TextInput
                             style={styles.searchInput}
@@ -135,21 +150,9 @@ export default function RecetasVerMasScreen() {
                         )}
                     </View>
                 </ScrollView>
-                {/* Footer */}
-                <View style={styles.footer}>
-                    <TouchableOpacity style={styles.footerTab}>
-                        <Ionicons name="home" size={24} color="#FF7B6B" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.footerTab}>
-                        <Ionicons name="search" size={24} color="#AAAAAA" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.footerTab}>
-                        <Ionicons name="restaurant" size={24} color="#AAAAAA" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.footerTab}>
-                        <Ionicons name="person" size={24} color="#AAAAAA" />
-                    </TouchableOpacity>
-                </View>
+                
+                {/* Footer unificado */}
+                <BottomNavbar currentScreen="search" />
             </View>
             <Modal
                 visible={modalVisible}
@@ -271,20 +274,7 @@ const styles = StyleSheet.create({
         textAlign: 'left',
         marginTop: 2,
     },
-    footer: {
-        flexDirection: 'row',
-        paddingVertical: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#EEEEEE',
-        backgroundColor: 'white',
-        borderBottomLeftRadius: 40,
-        borderBottomRightRadius: 40,
-    },
-    footerTab: {
-        flex: 1,
-        alignItems: 'center',
-        paddingVertical: 8,
-    },
+
     backButton: {
         position: 'absolute',
         left: 10,

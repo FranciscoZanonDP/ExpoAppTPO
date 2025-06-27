@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import BottomNavbar from '@/components/BottomNavbar';
 
 export default function EditarRecetaScreen() {
     const router = useRouter();
@@ -15,13 +16,13 @@ export default function EditarRecetaScreen() {
 
     useEffect(() => {
         const cargarReceta = async () => {
-            if (params.receta) {
+        if (params.receta) {
                 // Si se pasa la receta completa como parámetro
-                try {
-                    setReceta(JSON.parse(params.receta as string));
-                } catch {
-                    setReceta(null);
-                }
+            try {
+                setReceta(JSON.parse(params.receta as string));
+            } catch {
+                setReceta(null);
+            }
             } else if (params.id) {
                 // Si solo se pasa el ID, cargar la receta completa desde la API
                 try {
@@ -140,7 +141,7 @@ export default function EditarRecetaScreen() {
                                 router.replace('/views/cargar-receta-1');
                             } else {
                                 // Si vino desde editar-mis-recetas, regresar allí
-                                router.replace('/views/editar-mis-recetas');
+                router.replace('/views/editar-mis-recetas');
                             }
                         }
                     }
@@ -260,14 +261,8 @@ export default function EditarRecetaScreen() {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
-            <View style={styles.bottomNav}>
-                <TouchableOpacity onPress={() => router.replace('/views/home')}>
-                    <Ionicons name="home-outline" size={32} color="#FF7B6B" />
-                </TouchableOpacity>
-                <Ionicons name="search-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="restaurant-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="person" size={32} color="#FF7B6B" />
-            </View>
+            {/* Footer unificado */}
+            <BottomNavbar currentScreen="recipes" />
         </View>
     );
 }
@@ -329,25 +324,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 20,
     },
-    bottomNav: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        paddingVertical: 15,
-        paddingBottom: 25,
-        borderTopLeftRadius: 40,
-        borderTopRightRadius: 40,
-        backgroundColor: 'white',
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-    },
+
     editButton: {
         backgroundColor: '#E5E5E5',
         borderRadius: 20,

@@ -285,7 +285,7 @@ export default function HomeScreen() {
           {/* Sección de recetas populares */}
           <View style={styles.sectionHeader}>
             <ThemedText style={styles.sectionTitle}>Recetas populares</ThemedText>
-            <TouchableOpacity onPress={() => router.push('/views/recetas-ver-mas')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/views/recetas-ver-mas', params: { tipo: 'populares' } })}>
               <ThemedText style={styles.seeMoreText}>Ver Más</ThemedText>
             </TouchableOpacity>
           </View>

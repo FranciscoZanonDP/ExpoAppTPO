@@ -100,7 +100,7 @@ export default function RecetaDetalleMisRecetasScreen() {
                 return (
                     <ScrollView style={styles.slideScrollView} showsVerticalScrollIndicator={false}>
                         <View style={styles.slideContent}>
-                            <Text style={styles.sectionTitle}>Descripción</Text>
+            <Text style={styles.sectionTitle}>Descripción</Text>
                             
                             {/* Imagen de la receta */}
                             <View style={styles.imagenContainer}>
@@ -138,20 +138,20 @@ export default function RecetaDetalleMisRecetasScreen() {
                 return (
                     <ScrollView style={styles.slideScrollView} showsVerticalScrollIndicator={false}>
                         <View style={styles.slideContent}>
-                            <Text style={styles.sectionTitle}>Ingredientes</Text>
+            <Text style={styles.sectionTitle}>Ingredientes</Text>
                             <View style={styles.listContainer}>
-                                {receta.ingredientes && receta.ingredientes.length > 0 ? (
-                                    receta.ingredientes.map((ing: any, idx: number) => (
+            {receta.ingredientes && receta.ingredientes.length > 0 ? (
+                receta.ingredientes.map((ing: any, idx: number) => (
                                         <View key={idx} style={styles.ingredienteCard}>
-                                            <Text style={styles.ingredienteNombre}>{ing.nombre}</Text>
+                        <Text style={styles.ingredienteNombre}>{ing.nombre}</Text>
                                             <Text style={styles.ingredienteCantidad}>
                                                 {ing.cantidad} {ing.unidad}
                                             </Text>
-                                        </View>
-                                    ))
-                                ) : (
+                    </View>
+                ))
+            ) : (
                                     <Text style={styles.vacio}>No hay ingredientes registrados</Text>
-                                )}
+            )}
                             </View>
                         </View>
                     </ScrollView>
@@ -161,10 +161,10 @@ export default function RecetaDetalleMisRecetasScreen() {
                 return (
                     <ScrollView style={styles.slideScrollView} showsVerticalScrollIndicator={false}>
                         <View style={styles.slideContent}>
-                            <Text style={styles.sectionTitle}>Pasos</Text>
+            <Text style={styles.sectionTitle}>Pasos</Text>
                             <View style={styles.listContainer}>
-                                {receta.pasos && receta.pasos.length > 0 ? (
-                                    receta.pasos.map((paso: any, idx: number) => (
+            {receta.pasos && receta.pasos.length > 0 ? (
+                receta.pasos.map((paso: any, idx: number) => (
                                         <View key={idx} style={styles.pasoCard}>
                                             <View style={styles.pasoHeader}>
                                                 <View style={styles.pasoNumeroContainer}>
@@ -172,7 +172,7 @@ export default function RecetaDetalleMisRecetasScreen() {
                                                 </View>
                                                 <Text style={styles.pasoTitulo}>Paso {idx + 1}</Text>
                                             </View>
-                                            <Text style={styles.pasoDescripcion}>{paso.descripcion}</Text>
+                        <Text style={styles.pasoDescripcion}>{paso.descripcion}</Text>
                                             
                                             {/* Mostrar medios múltiples del paso */}
                                             {paso.medios && paso.medios.length > 0 && (
@@ -212,12 +212,12 @@ export default function RecetaDetalleMisRecetasScreen() {
                                                     />
                                                 </View>
                                             )}
-                                        </View>
-                                    ))
-                                ) : (
+                    </View>
+                ))
+            ) : (
                                     <Text style={styles.vacio}>No hay pasos registrados</Text>
-                                )}
-                            </View>
+            )}
+        </View>
                         </View>
                     </ScrollView>
                 );
@@ -262,7 +262,7 @@ export default function RecetaDetalleMisRecetasScreen() {
                     disabled={slide === 0}
                 >
                     <Ionicons name="chevron-back" size={24} color={slide === 0 ? "#ccc" : "#FF7B6B"} />
-                </TouchableOpacity>
+                        </TouchableOpacity>
 
                 <View style={styles.dotsContainer}>
                     {slides.map((_, idx) => (
@@ -280,7 +280,7 @@ export default function RecetaDetalleMisRecetasScreen() {
                     disabled={slide === slides.length - 1}
                 >
                     <Ionicons name="chevron-forward" size={24} color={slide === slides.length - 1 ? "#ccc" : "#FF7B6B"} />
-                </TouchableOpacity>
+                        </TouchableOpacity>
             </View>
 
             {/* Botón eliminar */}

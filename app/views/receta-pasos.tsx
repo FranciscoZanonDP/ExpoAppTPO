@@ -5,6 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import StarRating from '@/components/StarRating';
+import BottomNavbar from '@/components/BottomNavbar';
 
 export default function RecetaPasosScreen() {
     const router = useRouter();
@@ -201,6 +202,9 @@ export default function RecetaPasosScreen() {
                 <TouchableOpacity style={[styles.finalizarBtn, { opacity: todosFinalizados ? 1 : 0.5 }]} onPress={handleFinalizar} disabled={!todosFinalizados}>
                     <ThemedText style={styles.finalizarBtnText}>Finalizar</ThemedText>
                 </TouchableOpacity>
+                
+                {/* Footer unificado */}
+                <BottomNavbar currentScreen="home" />
             </View>
 
             {/* Modal de Valoración */}

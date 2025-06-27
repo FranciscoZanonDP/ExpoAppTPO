@@ -2,8 +2,8 @@ import { StyleSheet, View, TouchableOpacity, SafeAreaView, ScrollView, TextInput
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { useEffect, useState, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useState, useCallback } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function RecetaComentariosScreen() {
     const router = useRouter();
@@ -11,31 +11,26 @@ export default function RecetaComentariosScreen() {
     const [comentarios, setComentarios] = useState<any[]>([]);
     const [nuevoComentario, setNuevoComentario] = useState('');
     const [comentLoading, setComentLoading] = useState(false);
-    const [usuarioId, setUsuarioId] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchUsuario = async () => {
-            const usuarioStr = await AsyncStorage.getItem('usuario');
-            if (usuarioStr) {
-                const usuario = JSON.parse(usuarioStr);
-                setUsuarioId(usuario.id);
-            }
-        };
-        fetchUsuario();
-    }, []);
+    
+    // Usar el hook de autenticación
+    const { usuarioId, isAuthenticated } = useAuth();
 
     useFocusEffect(
         useCallback(() => {
             let isActive = true;
             const fetchComentarios = async () => {
                 if (!params.id) return;
-                const res = await fetch(`https://expo-app-tpo.vercel.app/api/comentarios?receta_id=${params.id}`);
+                // Obtener comentarios aprobados + los propios en revisión del usuario
+                const url = usuarioId 
+                    ? `https://expo-app-tpo.vercel.app/api/comentarios?receta_id=${params.id}&usuario_id=${usuarioId}`
+                    : `https://expo-app-tpo.vercel.app/api/comentarios?receta_id=${params.id}`;
+                const res = await fetch(url);
                 const data = await res.json();
                 if (isActive) setComentarios(data.comentarios || []);
             };
             fetchComentarios();
             return () => { isActive = false; };
-        }, [params.id])
+        }, [params.id, usuarioId])
     );
 
     const handleComentar = async () => {
@@ -48,7 +43,10 @@ export default function RecetaComentariosScreen() {
         });
         setNuevoComentario('');
         // Refrescar comentarios
-        const res = await fetch(`https://expo-app-tpo.vercel.app/api/comentarios?receta_id=${params.id}`);
+        const url = usuarioId 
+            ? `https://expo-app-tpo.vercel.app/api/comentarios?receta_id=${params.id}&usuario_id=${usuarioId}`
+            : `https://expo-app-tpo.vercel.app/api/comentarios?receta_id=${params.id}`;
+        const res = await fetch(url);
         const data = await res.json();
         setComentarios(data.comentarios || []);
         setComentLoading(false);
@@ -68,14 +66,42 @@ export default function RecetaComentariosScreen() {
                         <ThemedText style={{ color: '#999', marginBottom: 10 }}>No hay comentarios.</ThemedText>
                     ) : (
                         comentarios.map((c: any) => (
-                            <View key={c.id} style={{ marginBottom: 14 }}>
-                                <ThemedText style={{ fontWeight: 'bold', color: '#333' }}>{c.usuario_nombre || 'Usuario'}</ThemedText>
+                            <View key={c.id} style={{ 
+                                marginBottom: 14, 
+                                backgroundColor: c.estado === 'en_revision' ? '#FFF9E6' : 'transparent',
+                                padding: c.estado === 'en_revision' ? 12 : 0,
+                                borderRadius: c.estado === 'en_revision' ? 8 : 0,
+                                borderLeftWidth: c.estado === 'en_revision' ? 3 : 0,
+                                borderLeftColor: c.estado === 'en_revision' ? '#FFB800' : 'transparent'
+                            }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                                    <ThemedText style={{ fontWeight: 'bold', color: '#333' }}>{c.usuario_nombre || 'Usuario'}</ThemedText>
+                                    {c.estado === 'en_revision' && (
+                                        <View style={{ 
+                                            backgroundColor: '#FFB800', 
+                                            paddingHorizontal: 8, 
+                                            paddingVertical: 2, 
+                                            borderRadius: 10, 
+                                            marginLeft: 8 
+                                        }}>
+                                            <ThemedText style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>EN REVISIÓN</ThemedText>
+                                        </View>
+                                    )}
+                                </View>
                                 <ThemedText style={{ color: '#444', marginBottom: 2 }}>{c.texto}</ThemedText>
                                 <ThemedText style={{ color: '#bbb', fontSize: 11 }}>{new Date(c.created_at).toLocaleString()}</ThemedText>
+                                {c.estado === 'en_revision' && (
+                                    <ThemedText style={{ color: '#CC8800', fontSize: 11, fontStyle: 'italic', marginTop: 4 }}>
+                                        Tu comentario está siendo revisado por un moderador
+                                    </ThemedText>
+                                )}
                             </View>
                         ))
                     )}
-                    {usuarioId && (
+                    
+                    
+                    
+                    {isAuthenticated && usuarioId && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
                             <TextInput
                                 style={{ flex: 1, borderWidth: 1, borderColor: '#FF7B6B', borderRadius: 10, padding: 8, marginRight: 8, color: '#222', backgroundColor: '#fafafa' }}

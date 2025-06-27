@@ -3,6 +3,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import BottomNavbar from '@/components/BottomNavbar';
 
 export default function CursosVerMasScreen() {
     const router = useRouter();
@@ -73,21 +74,9 @@ export default function CursosVerMasScreen() {
                         </View>
                     </View>
                 </ScrollView>
-                {/* Footer */}
-                <View style={styles.footer}>
-                    <TouchableOpacity style={styles.footerTab}>
-                        <Ionicons name="home" size={24} color="#FF7B6B" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.footerTab}>
-                        <Ionicons name="search" size={24} color="#AAAAAA" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.footerTab}>
-                        <Ionicons name="restaurant" size={24} color="#AAAAAA" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.footerTab}>
-                        <Ionicons name="person" size={24} color="#AAAAAA" />
-                    </TouchableOpacity>
-                </View>
+                
+                {/* Footer unificado */}
+                <BottomNavbar currentScreen="home" />
             </View>
         </SafeAreaView>
     );
@@ -174,20 +163,7 @@ const styles = StyleSheet.create({
         width: '90%',
         textAlign: 'left',
     },
-    footer: {
-        flexDirection: 'row',
-        paddingVertical: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#EEEEEE',
-        backgroundColor: 'white',
-        borderBottomLeftRadius: 40,
-        borderBottomRightRadius: 40,
-    },
-    footerTab: {
-        flex: 1,
-        alignItems: 'center',
-        paddingVertical: 8,
-    },
+
     backButton: {
         position: 'absolute',
         left: 10,

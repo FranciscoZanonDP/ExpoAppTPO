@@ -38,7 +38,7 @@ export default function CargarReceta2Screen() {
         nuevosIngredientes.splice(index, 1);
         setIngredientes(nuevosIngredientes);
     };
-
+    
     const handleStartEdit = (index: number) => {
         setEditIndex(index);
         const ing = ingredientes[index];

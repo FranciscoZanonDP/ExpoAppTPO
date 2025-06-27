@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import BottomNavbar from '@/components/BottomNavbar';
 
 const { width } = Dimensions.get('window');
 
@@ -239,21 +240,8 @@ export default function CursoDetalleScreen() {
                     </View>
                 </View>
             </Modal>
-            {/* Footer navegación igual al home */}
-            <View style={styles.footer}>
-                <TouchableOpacity style={styles.footerTab} onPress={() => router.replace('/views/home')}>
-                    <Ionicons name="home" size={28} color="#FF7B6B" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.footerTab}>
-                    <Ionicons name="search" size={28} color="#FF7B6B" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.footerTab}>
-                    <Ionicons name="restaurant" size={28} color="#FF7B6B" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.footerTab}>
-                    <Ionicons name="person" size={28} color="#FF7B6B" />
-                </TouchableOpacity>
-            </View>
+            {/* Footer unificado */}
+            <BottomNavbar currentScreen="home" />
         </View>
     );
 }
@@ -348,18 +336,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 18,
     },
-    footer: {
-        flexDirection: 'row',
-        paddingVertical: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#EEEEEE',
-        backgroundColor: '#fff',
-    },
-    footerTab: {
-        flex: 1,
-        alignItems: 'center',
-        paddingVertical: 8,
-    },
+
     centered: {
         flex: 1,
         justifyContent: 'center',

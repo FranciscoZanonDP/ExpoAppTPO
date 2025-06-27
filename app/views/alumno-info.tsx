@@ -1,29 +1,15 @@
-import { useEffect, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import BottomNavbar from '@/components/BottomNavbar';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function AlumnoInfoScreen() {
-    const [usuario, setUsuario] = useState<any>(null);
     const router = useRouter();
+    const { usuario, logout, loading } = useAuth(true);
 
-    useEffect(() => {
-        const fetchUsuario = async () => {
-            const usuarioStr = await AsyncStorage.getItem('usuario');
-            if (usuarioStr) setUsuario(JSON.parse(usuarioStr));
-        };
-        fetchUsuario();
-    }, []);
-
-    const handleLogout = async () => {
-        await AsyncStorage.removeItem('usuario');
-        router.replace('/views/login');
-    };
-
-    if (!usuario) return null;
+    if (loading || !usuario) return null;
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -63,7 +49,7 @@ export default function AlumnoInfoScreen() {
                         <Ionicons name="card-outline" size={20} color="#FF7B6B" style={styles.infoIcon} />
                         <ThemedText style={styles.infoItem}>Cuenta Corriente</ThemedText>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={handleLogout} style={styles.infoItemRow}>
+                    <TouchableOpacity onPress={logout} style={styles.infoItemRow}>
                         <Ionicons name="exit-outline" size={20} color="#FF7B6B" style={styles.infoIcon} />
                         <ThemedText style={styles.logoutText}>Cerrar Sesion</ThemedText>
                     </TouchableOpacity>

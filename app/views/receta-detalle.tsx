@@ -5,6 +5,7 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useEffect, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import StarRating from '@/components/StarRating';
+import BottomNavbar from '@/components/BottomNavbar';
 
 export default function RecetaDetalleScreen() {
     const router = useRouter();
@@ -334,14 +335,8 @@ export default function RecetaDetalleScreen() {
                     </View>
                 </ScrollView>
             </View>
-            <View style={styles.bottomNav}>
-                <TouchableOpacity onPress={() => router.replace('/views/home')}>
-                    <Ionicons name="home-outline" size={32} color="#FF7B6B" />
-                </TouchableOpacity>
-                <Ionicons name="search-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="restaurant-outline" size={32} color="#FF7B6B" />
-                <Ionicons name="person" size={32} color="#FF7B6B" />
-            </View>
+            {/* Footer unificado */}
+            <BottomNavbar currentScreen="home" />
         </SafeAreaView>
     );
 }
@@ -465,15 +460,7 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: 'bold',
     },
-    bottomNav: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        padding: 10,
-        backgroundColor: 'black',
-        borderTopWidth: 1,
-        borderTopColor: '#FF7B6B',
-    },
+
     porcionInput: {
         backgroundColor: '#F5F5F5',
         borderRadius: 10,

@@ -31,14 +31,14 @@ export default function BottomNavbar({ currentScreen = 'home' }: BottomNavbarPro
     }
     
     if (tab === 'search') {
-      // Navegar a la pantalla de búsqueda de recetas
-      router.push('/views/recetas-ver-mas');
+      // Navegar a la pantalla de búsqueda de recetas filtradas por aprobadas
+      router.push({ pathname: '/views/recetas-ver-mas', params: { tipo: 'populares' } });
       return;
     }
     
     if (tab === 'recipes') {
-      // Navegar a la pantalla de recetas
-      router.push('/views/recetas-ver-mas');
+      // Navegar a la pantalla de sedes
+      router.push('/views/sedes');
       return;
     }
 
@@ -52,35 +52,50 @@ export default function BottomNavbar({ currentScreen = 'home' }: BottomNavbarPro
   };
 
   const getIconColor = (tab: string) => {
-    return currentScreen === tab ? '#FF7B6B' : '#FF7B6B';
+    return currentScreen === tab ? '#FF7B6B' : '#AAAAAA';
+  };
+
+  const getIconName = (tab: string, isActive: boolean) => {
+    switch (tab) {
+      case 'home':
+        return isActive ? 'home' : 'home-outline';
+      case 'search':
+        return isActive ? 'search' : 'search-outline';
+      case 'recipes':
+        return isActive ? 'restaurant' : 'restaurant-outline';
+      case 'profile':
+        return isActive ? 'person' : 'person-outline';
+      default:
+        return 'home-outline';
+    }
   };
 
   return (
     <View style={styles.bottomNav}>
       <TouchableOpacity onPress={() => handleTabPress('home')}>
         <Ionicons 
-          name="home" 
+          name={getIconName('home', currentScreen === 'home')} 
           size={32} 
           color={getIconColor('home')} 
         />
       </TouchableOpacity>
       <TouchableOpacity onPress={() => handleTabPress('search')}>
         <Ionicons 
-          name="search-outline" 
+          name={getIconName('search', currentScreen === 'search')} 
           size={32} 
           color={getIconColor('search')} 
         />
       </TouchableOpacity>
       <TouchableOpacity onPress={() => handleTabPress('recipes')}>
         <Ionicons 
-          name="restaurant-outline" 
+          name={getIconName('recipes', currentScreen === 'recipes')} 
           size={32} 
           color={getIconColor('recipes')} 
         />
       </TouchableOpacity>
       <TouchableOpacity onPress={() => handleTabPress('profile')}>
         <Ionicons 
-          name="person" 
+          name={getIconName('profile', currentScreen === 'profile')} 
           size={32} 
           color={getIconColor('profile')} 
         />
