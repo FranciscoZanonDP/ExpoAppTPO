@@ -60,8 +60,6 @@ export default function HomeScreen() {
       if (ingredienteIncluye) params.append('ingrediente_incluye', ingredienteIncluye);
       if (ingredienteExcluye) params.append('ingrediente_excluye', ingredienteExcluye);
       if (usuario) params.append('usuario_nombre', usuario);
-      if (sort) params.append('sort', sort);
-      if (order) params.append('order', order);
       params.append('limit', '3');
       params.append('estado', 'aprobada'); // Solo recetas aprobadas
       params.append('sort', 'fecha'); // Ordenar por fecha
