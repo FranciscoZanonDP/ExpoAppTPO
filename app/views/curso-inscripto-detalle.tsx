@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert, Mod
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import QRCode from 'react-native-qrcode-svg';
+import { CameraView, Camera } from 'expo-camera';
 
 const cursos = {
     curso1: {
@@ -100,6 +100,7 @@ export default function CursoInscriptoDetalleScreen() {
     const { id, sede } = useLocalSearchParams();
     const [loading, setLoading] = useState(false);
     const [showQR, setShowQR] = useState(false);
+    const [hasPermission, setHasPermission] = useState<boolean | null>(null);
     const [usuario, setUsuario] = useState<any>(null);
     const curso = cursos[id as keyof typeof cursos];
     // Si no hay sede especificada, tomar la primera sede disponible
@@ -167,28 +168,31 @@ export default function CursoInscriptoDetalleScreen() {
         getUsuario();
     }, []);
 
-    // Generar datos para el QR de asistencia
-    const generarQRData = () => {
-        const fechaHoy = new Date().toISOString().split('T')[0];
-        const horaActual = new Date().toTimeString().split(' ')[0];
-        
-        return JSON.stringify({
-            curso_id: id,
-            usuario_email: usuario?.email || '',
-            fecha: fechaHoy,
-            hora: horaActual,
-            sede: sedeInfo?.nombre || '',
-            curso_titulo: curso.titulo,
-            tipo: 'asistencia'
-        });
-    };
-
-    const handleGenerarQR = () => {
+    // Solicitar permisos de cámara y abrir scanner
+    const handleEscanearQR = async () => {
         if (!usuario) {
             Alert.alert('Error', 'Usuario no encontrado');
             return;
         }
-        setShowQR(true);
+        
+        const { status } = await Camera.requestCameraPermissionsAsync();
+        if (status === 'granted') {
+            setHasPermission(true);
+            setShowQR(true);
+        } else {
+            setHasPermission(false);
+            Alert.alert('Permisos necesarios', 'Se necesita permiso de cámara para escanear códigos QR');
+        }
+    };
+
+    // Manejar el código escaneado
+    const handleBarcodeScanned = ({ type, data }: { type: string; data: string }) => {
+        setShowQR(false);
+        Alert.alert(
+            'QR Escaneado',
+            `Tipo: ${type}\nDatos: ${data}`,
+            [{ text: 'OK' }]
+        );
     };
 
     const handleDarseDeBaja = () => {
@@ -372,10 +376,10 @@ export default function CursoInscriptoDetalleScreen() {
                     {sedeInfo?.modalidad !== 'Virtual' && (
                         <TouchableOpacity 
                             style={styles.qrButton} 
-                            onPress={handleGenerarQR}
+                            onPress={handleEscanearQR}
                         >
                             <Ionicons name="qr-code-outline" size={20} color="#fff" style={styles.qrButtonIcon} />
-                            <Text style={styles.qrButtonText}>Generar QR de Asistencia</Text>
+                            <Text style={styles.qrButtonText}>Escanear QR de Asistencia</Text>
                         </TouchableOpacity>
                     )}
                     
@@ -392,40 +396,42 @@ export default function CursoInscriptoDetalleScreen() {
                 </View>
             </ScrollView>
             
-            {/* Modal para mostrar QR */}
+            {/* Modal para mostrar Scanner QR */}
             <Modal
                 visible={showQR}
-                transparent={true}
+                transparent={false}
                 animationType="slide"
                 onRequestClose={() => setShowQR(false)}
             >
-                <View style={styles.qrModalOverlay}>
-                    <View style={styles.qrModalContainer}>
-                        <View style={styles.qrModalHeader}>
-                            <Text style={styles.qrModalTitle}>QR de Asistencia</Text>
-                            <TouchableOpacity onPress={() => setShowQR(false)} style={styles.qrCloseButton}>
-                                <Ionicons name="close" size={24} color="#333" />
-                            </TouchableOpacity>
+                <View style={styles.cameraContainer}>
+                    <View style={styles.cameraHeader}>
+                        <Text style={styles.cameraTitle}>Escanear QR de Asistencia</Text>
+                        <TouchableOpacity onPress={() => setShowQR(false)} style={styles.cameraCloseButton}>
+                            <Ionicons name="close" size={28} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                    
+                    {hasPermission === null ? (
+                        <View style={styles.centered}>
+                            <Text>Solicitando permisos de cámara...</Text>
                         </View>
-                        
-                        <View style={styles.qrContainer}>
-                            <QRCode
-                                value={generarQRData()}
-                                size={200}
-                                color="#333"
-                                backgroundColor="white"
-                            />
+                    ) : hasPermission === false ? (
+                        <View style={styles.centered}>
+                            <Text>Sin acceso a la cámara</Text>
                         </View>
-                        
-                        <View style={styles.qrInfo}>
-                            <Text style={styles.qrInfoTitle}>{curso.titulo}</Text>
-                            <Text style={styles.qrInfoText}>Sede: {sedeInfo?.nombre}</Text>
-                            <Text style={styles.qrInfoText}>Fecha: {new Date().toLocaleDateString('es-AR')}</Text>
-                            <Text style={styles.qrInfoText}>Hora: {new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</Text>
-                        </View>
-                        
-                        <Text style={styles.qrInstructions}>
-                            Muestra este código QR al docente para registrar tu asistencia
+                    ) : (
+                        <CameraView
+                            style={styles.camera}
+                            onBarcodeScanned={handleBarcodeScanned}
+                            barcodeScannerSettings={{
+                                barcodeTypes: ['qr'],
+                            }}
+                        />
+                    )}
+                    
+                    <View style={styles.cameraInstructions}>
+                        <Text style={styles.instructionsText}>
+                            Apunta la cámara hacia el código QR para escanearlo
                         </Text>
                     </View>
                 </View>
@@ -668,5 +674,41 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontStyle: 'italic',
         paddingHorizontal: 16,
+    },
+    // Estilos para cámara
+    cameraContainer: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    cameraHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 20,
+        paddingTop: 50,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+    },
+    cameraTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#fff',
+        flex: 1,
+        textAlign: 'center',
+    },
+    cameraCloseButton: {
+        padding: 4,
+    },
+    camera: {
+        flex: 1,
+    },
+    cameraInstructions: {
+        padding: 20,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        alignItems: 'center',
+    },
+    instructionsText: {
+        fontSize: 16,
+        color: '#fff',
+        textAlign: 'center',
     },
 }); 

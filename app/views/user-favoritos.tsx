@@ -5,6 +5,8 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useEffect, useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const DEFAULT_IMAGE = "https://media.istockphoto.com/id/1409329028/es/vector/no-hay-imagen-disponible-marcador-de-posici%C3%B3n-miniatura-icono-dise%C3%B1o-de-ilustraci%C3%B3n.jpg?s=612x612&w=0&k=20&c=Bd89b8CBr-IXx9mBbTidc-wu_gtIj8Py_EMr3hGGaPw=";
+
 export default function UserFavoritosScreen() {
     const router = useRouter();
     const [favoritos, setFavoritos] = useState<any[]>([]);
@@ -76,7 +78,7 @@ export default function UserFavoritosScreen() {
                                             onPress={() => handleRecipePress(receta)}
                                         >
                                             <Image
-                                                source={receta.imagen_url ? { uri: receta.imagen_url } : require('../../assets/images/tortadebanana.jpg')}
+                                                source={receta.imagen_url ? { uri: receta.imagen_url } : { uri: DEFAULT_IMAGE }}
                                                 style={styles.recipeImage}
                                             />
                                             <View style={styles.recipeInfo}>
