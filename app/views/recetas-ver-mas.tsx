@@ -6,6 +6,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Picker } from '@react-native-picker/picker';
 import BottomNavbar from '@/components/BottomNavbar';
 
+const DEFAULT_IMAGE = "https://media.istockphoto.com/id/1409329028/es/vector/no-hay-imagen-disponible-marcador-de-posici%C3%B3n-miniatura-icono-dise%C3%B1o-de-ilustraci%C3%B3n.jpg?s=612x612&w=0&k=20&c=Bd89b8CBr-IXx9mBbTidc-wu_gtIj8Py_EMr3hGGaPw=";
+
 export default function RecetasVerMasScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
@@ -138,7 +140,7 @@ export default function RecetasVerMasScreen() {
                                             onPress={() => handleRecipePress(receta)}
                                         >
                                             <Image
-                                                source={receta.imagen_url ? { uri: receta.imagen_url } : require('../../assets/images/tortadebanana.jpg')}
+                                                source={receta.imagen_url ? { uri: receta.imagen_url } : { uri: DEFAULT_IMAGE }}
                                                 style={styles.cardImage}
                                             />
                                             <ThemedText style={styles.cardTitle}>{receta.nombre}</ThemedText>

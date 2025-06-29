@@ -32,19 +32,19 @@ export default function SplashScreen() {
         return () => {
             clearTimeout(timer);
             blinkAnimation.stop();
-        };
+    };
     }, [router, fadeAnim]);
 
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.content}>
                 <Animated.Image
-                    source={require('../assets/images/logo (2).png')}
+                            source={require('../assets/images/logo (2).png')}
                     style={[styles.image, { opacity: fadeAnim }]}
-                    resizeMode="contain"
-                />
-            </View>
-        </SafeAreaView>
+                            resizeMode="contain"
+                        />
+                </View>
+            </SafeAreaView>
     );
 }
 
