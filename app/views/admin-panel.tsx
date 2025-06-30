@@ -55,14 +55,19 @@ export default function AdminPanelScreen() {
                 body: JSON.stringify({ estado: action === 'aprobar' ? 'aprobada' : 'rechazada' })
             });
 
-            const data = await res.json();
-            console.log('Respuesta del servidor:', data);
-
             if (res.ok) {
+                try {
+                    const data = await res.json();
+                    console.log('Respuesta del servidor:', data);
+                } catch (e) {
+                    console.log('Respuesta no es JSON, pero es exitosa');
+                }
                 setRecetasPendientes(prev => prev.filter(r => r.id !== recetaId));
                 Alert.alert('Éxito', `Receta ${action === 'aprobar' ? 'aprobada' : 'rechazada'} correctamente`);
             } else {
-                Alert.alert('Error', data.error || 'No se pudo procesar la acción');
+                const errorText = await res.text();
+                console.log('Error del servidor:', errorText);
+                Alert.alert('Error', 'No se pudo procesar la acción');
             }
         } catch (error) {
             console.error('Error procesando receta:', error);
@@ -80,14 +85,19 @@ export default function AdminPanelScreen() {
                 body: JSON.stringify({ estado: action === 'aprobar' ? 'aprobada' : 'rechazada' })
             });
 
-            const data = await res.json();
-            console.log('Respuesta del servidor:', data);
-
             if (res.ok) {
+                try {
+                    const data = await res.json();
+                    console.log('Respuesta del servidor:', data);
+                } catch (e) {
+                    console.log('Respuesta no es JSON, pero es exitosa');
+                }
                 setComentariosPendientes(prev => prev.filter(c => c.id !== comentarioId));
                 Alert.alert('Éxito', `Comentario ${action === 'aprobar' ? 'aprobado' : 'rechazado'} correctamente`);
             } else {
-                Alert.alert('Error', data.error || 'No se pudo procesar la acción');
+                const errorText = await res.text();
+                console.log('Error del servidor:', errorText);
+                Alert.alert('Error', 'No se pudo procesar la acción');
             }
         } catch (error) {
             console.error('Error procesando comentario:', error);

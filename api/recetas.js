@@ -530,6 +530,11 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
+    // Extraer ID de la URL si existe
+    const urlParts = req.url.split('/');
+    const recetaId = urlParts[urlParts.length - 1].split('?')[0];
+    console.log('URL:', req.url, 'ID extraído:', recetaId);
+
     // ==================== MANEJO DE PASO-MEDIOS ====================
     // Si incluye action=paso-medios, manejar operaciones de medios
     if (req.query.action === 'paso-medios' || req.body?.action === 'paso-medios') {
@@ -552,6 +557,28 @@ module.exports = async (req, res) => {
         return getRecetas(req, res);
     }
     if (req.method === 'PUT') {
+        // Si tenemos un ID en la URL y estado en el body, actualizar estado
+        if (recetaId && !isNaN(recetaId)) {
+            const { estado } = req.body;
+            if (estado) {
+                const client = await pool.connect();
+                try {
+                    const result = await client.query(
+                        'UPDATE recetas SET estado = $1 WHERE id = $2 RETURNING *',
+                        [estado, recetaId]
+                    );
+                    if (result.rows.length === 0) {
+                        return res.status(404).json({ error: 'Receta no encontrada' });
+                    }
+                    return res.status(200).json({ success: true, receta: result.rows[0] });
+                } catch (err) {
+                    console.error('Error actualizando estado:', err);
+                    return res.status(500).json({ error: 'Error al actualizar el estado' });
+                } finally {
+                    client.release();
+                }
+            }
+        }
         return updateReceta(req, res);
     }
     if (req.method === 'DELETE') {
