@@ -599,4 +599,75 @@ module.exports = async (req, res) => {
     }
     
     return res.status(405).json({ error: 'Método no permitido' });
+};
+
+// Función específica para actualizar el estado de una receta
+const updateRecetaEstado = async (req, res) => {
+    if (req.method !== 'PUT') {
+        return res.status(405).json({ error: 'Método no permitido' });
+    }
+
+    const { id } = req.query;
+    const { estado } = req.body;
+
+    if (!id || !estado) {
+        return res.status(400).json({ error: 'Faltan el ID o el estado' });
+    }
+
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            'UPDATE recetas SET estado = $1 WHERE id = $2 RETURNING *',
+            [estado, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Receta no encontrada' });
+        }
+
+        return res.status(200).json({ success: true, receta: result.rows[0] });
+    } catch (err) {
+        console.error('Error actualizando estado de receta:', err);
+        return res.status(500).json({ error: 'Error al actualizar el estado de la receta' });
+    } finally {
+        client.release();
+    }
+};
+
+module.exports = async (req, res) => {
+    // Permitir CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    // Si es una actualización de estado
+    if (req.query.action === 'estado' && req.method === 'PUT') {
+        return updateRecetaEstado(req, res);
+    }
+
+    // Resto del código existente...
+    if (req.method === 'GET') {
+        return getRecetas(req, res);
+    }
+    if (req.method === 'PUT') {
+        return updateReceta(req, res);
+    }
+    if (req.method === 'DELETE') {
+        if (req.body?.action === 'valoraciones') {
+            return handleDeleteValoracion(req, res);
+        }
+        return deleteReceta(req, res);
+    }
+    if (req.method === 'POST') {
+        if (req.body?.action === 'valoraciones') {
+            return handlePostValoracion(req, res);
+        }
+        return handlePostReceta(req, res);
+    }
+    
+    return res.status(405).json({ error: 'Método no permitido' });
 }; 

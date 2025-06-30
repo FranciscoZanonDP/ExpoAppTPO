@@ -4,6 +4,39 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
 });
 
+// Función específica para actualizar el estado de un comentario
+const updateComentarioEstado = async (req, res) => {
+    if (req.method !== 'PUT') {
+        return res.status(405).json({ error: 'Método no permitido' });
+    }
+
+    const { id } = req.query;
+    const { estado } = req.body;
+
+    if (!id || !estado) {
+        return res.status(400).json({ error: 'Faltan el ID o el estado' });
+    }
+
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            'UPDATE comentarios SET estado = $1 WHERE id = $2 RETURNING *',
+            [estado, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Comentario no encontrado' });
+        }
+
+        return res.status(200).json({ success: true, comentario: result.rows[0] });
+    } catch (err) {
+        console.error('Error actualizando estado de comentario:', err);
+        return res.status(500).json({ error: 'Error al actualizar el estado del comentario' });
+    } finally {
+        client.release();
+    }
+};
+
 module.exports = async (req, res) => {
     // Configurar CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,6 +46,11 @@ module.exports = async (req, res) => {
     // Manejar preflight requests
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
+    }
+
+    // Si es una actualización de estado
+    if (req.query.action === 'estado' && req.method === 'PUT') {
+        return updateComentarioEstado(req, res);
     }
 
     const client = await pool.connect();

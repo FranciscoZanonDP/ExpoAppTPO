@@ -49,7 +49,7 @@ export default function AdminPanelScreen() {
     const handleRecetaAction = async (recetaId: string, action: 'aprobar' | 'rechazar') => {
         try {
             console.log('Actualizando receta:', recetaId, 'a estado:', action === 'aprobar' ? 'aprobada' : 'rechazada');
-            const res = await fetch(`https://expo-app-tpo.vercel.app/api/recetas/${recetaId}`, {
+            const res = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?id=${recetaId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ estado: action === 'aprobar' ? 'aprobada' : 'rechazada' })
@@ -79,7 +79,7 @@ export default function AdminPanelScreen() {
     const handleComentarioAction = async (comentarioId: string, action: 'aprobar' | 'rechazar') => {
         try {
             console.log('Actualizando comentario:', comentarioId, 'a estado:', action === 'aprobar' ? 'aprobada' : 'rechazada');
-            const res = await fetch(`https://expo-app-tpo.vercel.app/api/comentarios/${comentarioId}`, {
+            const res = await fetch(`https://expo-app-tpo.vercel.app/api/comentarios?id=${comentarioId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ estado: action === 'aprobar' ? 'aprobada' : 'rechazada' })
@@ -101,6 +101,58 @@ export default function AdminPanelScreen() {
             }
         } catch (error) {
             console.error('Error procesando comentario:', error);
+            Alert.alert('Error', 'Error de conexión');
+        }
+    };
+
+    // Función específica para manejar estados de recetas
+    const handleRecetaEstado = async (recetaId: string, estado: 'aprobada' | 'rechazada') => {
+        try {
+            console.log('Actualizando estado de receta:', recetaId, 'a estado:', estado);
+            const res = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?id=${recetaId}&action=estado`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estado })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                console.log('Respuesta del servidor:', data);
+                setRecetasPendientes(prev => prev.filter(r => r.id !== recetaId));
+                Alert.alert('Éxito', `Receta ${estado === 'aprobada' ? 'aprobada' : 'rechazada'} correctamente`);
+            } else {
+                const errorText = await res.text();
+                console.log('Error del servidor:', errorText);
+                Alert.alert('Error', 'No se pudo actualizar el estado de la receta');
+            }
+        } catch (error) {
+            console.error('Error actualizando estado de receta:', error);
+            Alert.alert('Error', 'Error de conexión');
+        }
+    };
+
+    // Función específica para manejar estados de comentarios
+    const handleComentarioEstado = async (comentarioId: string, estado: 'aprobada' | 'rechazada') => {
+        try {
+            console.log('Actualizando estado de comentario:', comentarioId, 'a estado:', estado);
+            const res = await fetch(`https://expo-app-tpo.vercel.app/api/comentarios?id=${comentarioId}&action=estado`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ estado })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                console.log('Respuesta del servidor:', data);
+                setComentariosPendientes(prev => prev.filter(c => c.id !== comentarioId));
+                Alert.alert('Éxito', `Comentario ${estado === 'aprobada' ? 'aprobado' : 'rechazado'} correctamente`);
+            } else {
+                const errorText = await res.text();
+                console.log('Error del servidor:', errorText);
+                Alert.alert('Error', 'No se pudo actualizar el estado del comentario');
+            }
+        } catch (error) {
+            console.error('Error actualizando estado de comentario:', error);
             Alert.alert('Error', 'Error de conexión');
         }
     };
@@ -162,13 +214,13 @@ export default function AdminPanelScreen() {
                                         <View style={styles.cardActions}>
                                             <TouchableOpacity 
                                                 style={[styles.actionButton, styles.approveButton]}
-                                                onPress={() => handleRecetaAction(receta.id, 'aprobar')}
+                                                onPress={() => handleRecetaEstado(receta.id, 'aprobada')}
                                             >
                                                 <ThemedText style={styles.actionButtonText}>Aprobar</ThemedText>
                                             </TouchableOpacity>
                                             <TouchableOpacity 
                                                 style={[styles.actionButton, styles.rejectButton]}
-                                                onPress={() => handleRecetaAction(receta.id, 'rechazar')}
+                                                onPress={() => handleRecetaEstado(receta.id, 'rechazada')}
                                             >
                                                 <ThemedText style={styles.actionButtonText}>Rechazar</ThemedText>
                                             </TouchableOpacity>
@@ -191,13 +243,13 @@ export default function AdminPanelScreen() {
                                         <View style={styles.cardActions}>
                                             <TouchableOpacity 
                                                 style={[styles.actionButton, styles.approveButton]}
-                                                onPress={() => handleComentarioAction(comentario.id, 'aprobar')}
+                                                onPress={() => handleComentarioEstado(comentario.id, 'aprobada')}
                                             >
                                                 <ThemedText style={styles.actionButtonText}>Aprobar</ThemedText>
                                             </TouchableOpacity>
                                             <TouchableOpacity 
                                                 style={[styles.actionButton, styles.rejectButton]}
-                                                onPress={() => handleComentarioAction(comentario.id, 'rechazar')}
+                                                onPress={() => handleComentarioEstado(comentario.id, 'rechazada')}
                                             >
                                                 <ThemedText style={styles.actionButtonText}>Rechazar</ThemedText>
                                             </TouchableOpacity>
