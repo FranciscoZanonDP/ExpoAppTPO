@@ -125,11 +125,11 @@ export default function EditarRecetaScreen() {
                 imagen_url: imagenUrl
             };
 
-            const response = await fetch(`https://expo-app-tpo.vercel.app/api/recetas/${receta.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(recetaActualizada),
-            });
+                    const response = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?id=${receta.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(recetaActualizada),
+        });
             const data = await response.json();
             if (response.ok && data.success) {
                 Alert.alert('Éxito', 'Receta actualizada correctamente', [

@@ -194,7 +194,10 @@ const updateReceta = async (req, res) => {
     if (req.method !== 'PUT') {
         return res.status(405).json({ error: 'Método no permitido' });
     }
-    const id = req.url.split('/').pop();
+    const id = req.query.id;
+    if (!id) {
+        return res.status(400).json({ error: 'Falta el ID de la receta' });
+    }
     const { nombre, categoria, descripcion, ingredientes, pasos, estado } = req.body;
 
     // Si solo se está actualizando el estado
