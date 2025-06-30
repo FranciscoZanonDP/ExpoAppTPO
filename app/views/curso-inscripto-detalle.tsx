@@ -178,7 +178,7 @@ export default function CursoInscriptoDetalleScreen() {
         const { status } = await Camera.requestCameraPermissionsAsync();
         if (status === 'granted') {
             setHasPermission(true);
-            setShowQR(true);
+        setShowQR(true);
         } else {
             setHasPermission(false);
             Alert.alert('Permisos necesarios', 'Se necesita permiso de cámara para escanear códigos QR');
@@ -408,9 +408,9 @@ export default function CursoInscriptoDetalleScreen() {
                         <Text style={styles.cameraTitle}>Escanear QR de Asistencia</Text>
                         <TouchableOpacity onPress={() => setShowQR(false)} style={styles.cameraCloseButton}>
                             <Ionicons name="close" size={28} color="#fff" />
-                        </TouchableOpacity>
-                    </View>
-                    
+                            </TouchableOpacity>
+                        </View>
+                        
                     {hasPermission === null ? (
                         <View style={styles.centered}>
                             <Text>Solicitando permisos de cámara...</Text>

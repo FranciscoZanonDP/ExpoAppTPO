@@ -30,7 +30,13 @@ export default function LoginScreen() {
             // Guarda el usuario en AsyncStorage
             await AsyncStorage.setItem('usuario', JSON.stringify(data.user));
             alert('¡Login exitoso! Bienvenido, ' + data.user.nombre);
-            router.replace('/views/home');
+            
+            // Redirigir según el rol del usuario
+            if (data.user.userType === 'Administrador') {
+                router.replace('/views/admin-panel');
+            } else {
+                router.replace('/views/home');
+            }
         } catch (error) {
             alert('Error de red: ' + String(error));
         }
