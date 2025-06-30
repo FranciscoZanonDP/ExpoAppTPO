@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BottomNavbar from '@/components/BottomNavbar';
 
@@ -11,43 +11,49 @@ export default function EditarMisRecetasScreen() {
     const [loading, setLoading] = useState(true);
     const [usuario, setUsuario] = useState<any>(null);
 
-    useEffect(() => {
-        const fetchRecetas = async () => {
-            setLoading(true);
-            const usuarioStr = await AsyncStorage.getItem('usuario');
-            if (!usuarioStr) {
-                setLoading(false);
-                setUsuario(null);
-                return;
-            }
-            const usuario = JSON.parse(usuarioStr);
-            setUsuario(usuario);
-            console.log('Usuario cargado:', usuario);
-            let url = '';
-            if (usuario.id) {
-                url = `https://expo-app-tpo.vercel.app/api/recetas?usuario_id=${usuario.id}`;
-            } else if (usuario.email) {
-                url = `https://expo-app-tpo.vercel.app/api/recetas?usuario_email=${usuario.email}`;
+    const fetchRecetas = async () => {
+        setLoading(true);
+        const usuarioStr = await AsyncStorage.getItem('usuario');
+        if (!usuarioStr) {
+            setLoading(false);
+            setUsuario(null);
+            return;
+        }
+        const usuario = JSON.parse(usuarioStr);
+        setUsuario(usuario);
+        console.log('Usuario cargado:', usuario);
+        let url = '';
+        if (usuario.id) {
+            url = `https://expo-app-tpo.vercel.app/api/recetas?usuario_id=${usuario.id}`;
+        } else if (usuario.email) {
+            url = `https://expo-app-tpo.vercel.app/api/recetas?usuario_email=${usuario.email}`;
+        } else {
+            setRecetas([]);
+            setLoading(false);
+            return;
+        }
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            if (res.ok && data.recetas) {
+                setRecetas(data.recetas);
             } else {
                 setRecetas([]);
-                setLoading(false);
-                return;
             }
-            try {
-                const res = await fetch(url);
-                const data = await res.json();
-                if (res.ok && data.recetas) {
-                    setRecetas(data.recetas);
-                } else {
-                    setRecetas([]);
-                }
-            } catch (err) {
-                setRecetas([]);
-            }
-            setLoading(false);
-        };
-        fetchRecetas();
-    }, []);
+        } catch (err) {
+            console.error('Error cargando recetas:', err);
+            setRecetas([]);
+        }
+        setLoading(false);
+    };
+
+    // Usar useFocusEffect para recargar las recetas cada vez que la pantalla obtiene el foco
+    useFocusEffect(
+        useCallback(() => {
+            console.log('Recargando recetas...');
+            fetchRecetas();
+        }, [])
+    );
 
     const handleEditar = async (receta: any) => {
         const res = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?id=${receta.id}`);

@@ -52,7 +52,7 @@ export default function EditarRecetaScreen() {
     const seleccionarImagen = async () => {
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: 'images',
                 allowsEditing: true,
                 aspect: [4, 3],
                 quality: 0.8,
@@ -73,8 +73,19 @@ export default function EditarRecetaScreen() {
         try {
             // Convertir imagen a base64
             const base64 = await FileSystem.readAsStringAsync(nuevaImagen, {
-                encoding: 'base64',
+                encoding: FileSystem.EncodingType.Base64,
             });
+
+            // Asegurarse de que tenemos los datos necesarios
+            if (!base64) {
+                throw new Error('No se pudo leer la imagen');
+            }
+
+            // Crear el formato de data URL
+            const imageData = `data:image/jpeg;base64,${base64}`;
+            const fileName = `receta-${Date.now()}.jpg`;
+            
+            console.log('Subiendo imagen:', { filenameLength: fileName.length, base64Length: base64.length });
 
             const response = await fetch('https://expo-app-tpo.vercel.app/api/upload-image', {
                 method: 'POST',
@@ -82,20 +93,26 @@ export default function EditarRecetaScreen() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    image: base64,
-                    filename: `receta_${receta.id}_${Date.now()}.jpg`,
+                    imageData,
+                    fileName,
                 }),
             });
 
             const data = await response.json();
-            if (response.ok && data.url) {
-                return data.url;
-            } else {
-                throw new Error(data.error || 'Error al subir imagen');
+            console.log('Respuesta del servidor:', data);
+            
+            if (!response.ok) {
+                throw new Error(data.error || `Error del servidor: ${response.status}`);
             }
+            
+            if (!data.url) {
+                throw new Error('El servidor no devolvió la URL de la imagen');
+            }
+            
+            return data.url;
         } catch (error) {
             console.error('Error subiendo imagen:', error);
-            Alert.alert('Error', 'No se pudo subir la imagen');
+            Alert.alert('Error', error instanceof Error ? error.message : 'No se pudo subir la imagen');
             return null;
         } finally {
             setSubiendoImagen(false);
@@ -125,11 +142,16 @@ export default function EditarRecetaScreen() {
                 imagen_url: imagenUrl
             };
 
-                    const response = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?id=${receta.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(recetaActualizada),
-        });
+            console.log('Enviando actualización de receta:', {
+                id: receta.id,
+                imagen_url: imagenUrl
+            });
+
+            const response = await fetch(`https://expo-app-tpo.vercel.app/api/recetas?id=${receta.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(recetaActualizada),
+            });
             const data = await response.json();
             if (response.ok && data.success) {
                 Alert.alert('Éxito', 'Receta actualizada correctamente', [

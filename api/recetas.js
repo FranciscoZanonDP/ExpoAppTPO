@@ -198,7 +198,8 @@ const updateReceta = async (req, res) => {
     if (!id) {
         return res.status(400).json({ error: 'Falta el ID de la receta' });
     }
-    const { nombre, categoria, descripcion, ingredientes, pasos, estado } = req.body;
+    const { nombre, categoria, descripcion, ingredientes, pasos, estado, imagen_url } = req.body;
+    console.log('Actualizando receta:', { id, nombre, categoria, descripcion, imagen_url });
 
     // Si solo se está actualizando el estado
     if (estado && !nombre) {
@@ -222,7 +223,10 @@ const updateReceta = async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        await client.query('UPDATE recetas SET nombre = $1, categoria = $2, descripcion = $3 WHERE id = $4', [nombre, categoria, descripcion, id]);
+        await client.query(
+            'UPDATE recetas SET nombre = $1, categoria = $2, descripcion = $3, imagen_url = $4 WHERE id = $5 RETURNING *',
+            [nombre, categoria, descripcion, imagen_url, id]
+        );
         
         // Eliminar ingredientes existentes
         await client.query('DELETE FROM ingredientes WHERE receta_id = $1', [id]);
