@@ -108,11 +108,11 @@ module.exports = async (req, res) => {
             [email]
         );
         if (result.rows.length === 0) {
-            return res.status(401).json({ error: 'Usuario no encontrado' });
+            return res.status(401).json({ error: 'Usuario o contraseña incorrecta' });
         }
         const user = result.rows[0];
         if (user.password !== password) {
-            return res.status(401).json({ error: 'Contraseña incorrecta' });
+            return res.status(401).json({ error: 'Usuario o contraseña incorrecta' });
         }
         // Puedes devolver más datos del usuario si quieres
         return res.status(200).json({ message: 'Login exitoso', user: { id: user.id, nombre: user.nombre, email: user.email, userType: user.user_type } });
