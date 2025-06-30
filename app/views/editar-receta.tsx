@@ -136,10 +136,14 @@ export default function EditarRecetaScreen() {
                 }
             }
 
-            // Actualizar receta con la nueva URL de imagen
+            // Actualizar receta con la nueva URL de imagen y asegurar que los pasos tienen sus medios
             const recetaActualizada = {
                 ...receta,
-                imagen_url: imagenUrl
+                imagen_url: imagenUrl,
+                pasos: receta.pasos.map((paso: any) => ({
+                    ...paso,
+                    medios: paso.medios || []
+                }))
             };
 
             console.log('Enviando actualización de receta:', {

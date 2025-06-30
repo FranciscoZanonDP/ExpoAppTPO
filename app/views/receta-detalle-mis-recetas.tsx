@@ -174,16 +174,17 @@ export default function RecetaDetalleMisRecetasScreen() {
                                             </View>
                         <Text style={styles.pasoDescripcion}>{paso.descripcion}</Text>
                                             
-                                            {/* Mostrar medios múltiples del paso */}
-                                            {paso.medios && paso.medios.length > 0 && (
+                                            {/* Mostrar medios del paso */}
+                                            {((paso.medios && paso.medios.length > 0) || paso.imagen_url) && (
                                                 <View style={styles.pasoMediaContainer}>
                                                     <ScrollView 
                                                         horizontal 
                                                         showsHorizontalScrollIndicator={false}
                                                         style={styles.pasoMediaScroll}
                                                     >
-                                                        {paso.medios.map((medio: any, medioIdx: number) => (
-                                                            <View key={medioIdx} style={styles.pasoMediaItem}>
+                                                        {/* Mostrar medios múltiples si existen */}
+                                                        {paso.medios && paso.medios.map((medio: any, medioIdx: number) => (
+                                                            <View key={`medio-${medioIdx}`} style={styles.pasoMediaItem}>
                                                                 {medio.tipo === 'imagen' ? (
                                                                     <Image 
                                                                         source={{ uri: medio.url }} 
@@ -198,18 +199,18 @@ export default function RecetaDetalleMisRecetasScreen() {
                                                                 )}
                                                             </View>
                                                         ))}
+                                                        
+                                                        {/* Mostrar imagen tradicional si existe */}
+                                                        {paso.imagen_url && (
+                                                            <View style={styles.pasoMediaItem}>
+                                                                <Image 
+                                                                    source={{ uri: paso.imagen_url }} 
+                                                                    style={styles.pasoImagen}
+                                                                    resizeMode="cover"
+                                                                />
+                                                            </View>
+                                                        )}
                                                     </ScrollView>
-                                                </View>
-                                            )}
-                                            
-                                            {/* Mostrar imagen tradicional si existe y no hay medios múltiples */}
-                                            {(!paso.medios || paso.medios.length === 0) && paso.imagen_url && (
-                                                <View style={styles.pasoMediaContainer}>
-                                                    <Image 
-                                                        source={{ uri: paso.imagen_url }} 
-                                                        style={styles.pasoImagenSingle}
-                                                        resizeMode="cover"
-                                                    />
                                                 </View>
                                             )}
                     </View>
@@ -546,8 +547,8 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
     pasoImagen: {
-        width: 120,
-        height: 90,
+        width: 160,
+        height: 120,
         borderRadius: 8,
         backgroundColor: '#f0f0f0',
     },

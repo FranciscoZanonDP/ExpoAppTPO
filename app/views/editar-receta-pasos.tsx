@@ -64,14 +64,18 @@ export default function EditarRecetaPasosScreen() {
                 encoding: 'base64',
             });
 
+            // Crear el formato de data URL
+            const imageData = `data:image/jpeg;base64,${base64}`;
+            const fileName = `paso_${receta.id}_${pasoIndex}_${Date.now()}.${tipo === 'imagen' ? 'jpg' : 'mp4'}`;
+
             const response = await fetch('https://expo-app-tpo.vercel.app/api/upload-image', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    image: base64,
-                    filename: `paso_${receta.id}_${pasoIndex}_${Date.now()}.${tipo === 'imagen' ? 'jpg' : 'mp4'}`,
+                    imageData,
+                    fileName
                 }),
             });
 
@@ -105,7 +109,23 @@ export default function EditarRecetaPasosScreen() {
     };
 
     const handleGuardar = () => {
-        router.replace({ pathname: '/views/editar-receta', params: { receta: JSON.stringify({ ...receta, pasos }) } });
+        // Asegurarse de que cada paso tenga su propiedad medios
+        const pasosActualizados = pasos.map(paso => ({
+            ...paso,
+            medios: paso.medios || []
+        }));
+        
+        console.log('Guardando pasos con medios:', pasosActualizados);
+        
+        router.replace({ 
+            pathname: '/views/editar-receta', 
+            params: { 
+                receta: JSON.stringify({ 
+                    ...receta, 
+                    pasos: pasosActualizados 
+                }) 
+            } 
+        });
     };
 
     if (!receta) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>No se pudo cargar la receta.</Text></View>;
