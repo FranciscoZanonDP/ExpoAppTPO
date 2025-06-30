@@ -195,7 +195,27 @@ const updateReceta = async (req, res) => {
         return res.status(405).json({ error: 'Método no permitido' });
     }
     const id = req.url.split('/').pop();
-    const { nombre, categoria, descripcion, ingredientes, pasos } = req.body;
+    const { nombre, categoria, descripcion, ingredientes, pasos, estado } = req.body;
+
+    // Si solo se está actualizando el estado
+    if (estado && !nombre) {
+        const client = await pool.connect();
+        try {
+            const result = await client.query(
+                'UPDATE recetas SET estado = $1 WHERE id = $2 RETURNING *',
+                [estado, id]
+            );
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Receta no encontrada' });
+            }
+            return res.status(200).json({ success: true, receta: result.rows[0] });
+        } catch (err) {
+            console.error('Error actualizando estado:', err);
+            return res.status(500).json({ error: 'Error al actualizar el estado' });
+        } finally {
+            client.release();
+        }
+    }
     const client = await pool.connect();
     try {
         await client.query('BEGIN');

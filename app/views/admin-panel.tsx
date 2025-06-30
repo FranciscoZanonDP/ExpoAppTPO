@@ -48,17 +48,21 @@ export default function AdminPanelScreen() {
     // Manejar aprobación/rechazo de recetas
     const handleRecetaAction = async (recetaId: string, action: 'aprobar' | 'rechazar') => {
         try {
+            console.log('Actualizando receta:', recetaId, 'a estado:', action === 'aprobar' ? 'aprobada' : 'rechazada');
             const res = await fetch(`https://expo-app-tpo.vercel.app/api/recetas/${recetaId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ estado: action === 'aprobar' ? 'aprobada' : 'rechazada' })
             });
 
+            const data = await res.json();
+            console.log('Respuesta del servidor:', data);
+
             if (res.ok) {
                 setRecetasPendientes(prev => prev.filter(r => r.id !== recetaId));
                 Alert.alert('Éxito', `Receta ${action === 'aprobar' ? 'aprobada' : 'rechazada'} correctamente`);
             } else {
-                Alert.alert('Error', 'No se pudo procesar la acción');
+                Alert.alert('Error', data.error || 'No se pudo procesar la acción');
             }
         } catch (error) {
             console.error('Error procesando receta:', error);
@@ -69,17 +73,21 @@ export default function AdminPanelScreen() {
     // Manejar aprobación/rechazo de comentarios
     const handleComentarioAction = async (comentarioId: string, action: 'aprobar' | 'rechazar') => {
         try {
+            console.log('Actualizando comentario:', comentarioId, 'a estado:', action === 'aprobar' ? 'aprobada' : 'rechazada');
             const res = await fetch(`https://expo-app-tpo.vercel.app/api/comentarios/${comentarioId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ estado: action === 'aprobar' ? 'aprobada' : 'rechazada' })
             });
 
+            const data = await res.json();
+            console.log('Respuesta del servidor:', data);
+
             if (res.ok) {
                 setComentariosPendientes(prev => prev.filter(c => c.id !== comentarioId));
                 Alert.alert('Éxito', `Comentario ${action === 'aprobar' ? 'aprobado' : 'rechazado'} correctamente`);
             } else {
-                Alert.alert('Error', 'No se pudo procesar la acción');
+                Alert.alert('Error', data.error || 'No se pudo procesar la acción');
             }
         } catch (error) {
             console.error('Error procesando comentario:', error);

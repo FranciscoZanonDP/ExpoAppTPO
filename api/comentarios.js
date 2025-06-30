@@ -5,6 +5,16 @@ const pool = new Pool({
 });
 
 module.exports = async (req, res) => {
+    // Configurar CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    // Manejar preflight requests
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     const client = await pool.connect();
     try {
         if (req.method === 'POST') {
