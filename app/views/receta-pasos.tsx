@@ -39,7 +39,13 @@ export default function RecetaPasosScreen() {
             const usuarioStr = await AsyncStorage.getItem('usuario');
             if (usuarioStr) {
                 const usuario = JSON.parse(usuarioStr);
-                setUsuarioId(usuario.id);
+                if (usuario.id) {
+                    setUsuarioId(usuario.id);
+                } else {
+                    setUsuarioId(null);
+                }
+            } else {
+                setUsuarioId(null);
             }
         };
         

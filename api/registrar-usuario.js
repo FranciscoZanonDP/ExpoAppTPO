@@ -31,7 +31,10 @@ module.exports = async (req, res) => {
                 ]
             );
         }
-        return res.status(201).json({ registrado: true });
+        return res.status(201).json({ 
+            registrado: true,
+            userId: usuarioId
+        });
     } catch (err) {
         return res.status(500).json({ error: 'No se pudo registrar', detalle: err.message });
     }

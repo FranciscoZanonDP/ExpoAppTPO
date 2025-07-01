@@ -114,11 +114,15 @@ export default function VerificationScreen() {
                 setLoading(false);
                 return;
             }
-            await AsyncStorage.setItem('usuario', JSON.stringify({
+            // Obtener el ID del usuario recién registrado de la respuesta
+            const userToStore = {
+                id: data.userId, // Asumiendo que el backend devuelve el ID en data.userId
                 nombre: params.nombre,
                 email: params.email,
                 userType
-            }));
+            };
+            console.log('📝 [Register] Datos del usuario a guardar:', userToStore);
+            await AsyncStorage.setItem('usuario', JSON.stringify(userToStore));
             Alert.alert('¡Registro exitoso!');
             router.replace('/views/home');
         } catch (error) {

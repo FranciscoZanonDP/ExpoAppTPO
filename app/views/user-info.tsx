@@ -1,3 +1,4 @@
+import React from 'react';
 import { View, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,9 +8,23 @@ import { useAuth } from '@/hooks/useAuth';
 
 export default function UserInfoScreen() {
     const router = useRouter();
-    const { usuario, logout, loading } = useAuth(true);
+    const { usuario, logout, loading } = useAuth(false);
 
-    if (loading || !usuario) return null;
+    // Si no hay usuario, redirigir al login
+    React.useEffect(() => {
+        if (!usuario && !loading) {
+            console.log('❌ [UserInfo] No hay usuario, redirigiendo a login');
+            router.replace({
+                pathname: '/views/login'
+            });
+        }
+    }, [usuario, loading]);
+
+    if (!usuario || loading) {
+        return null;
+    }
+
+    if (loading) return null;
 
     return (
         <SafeAreaView style={styles.safeArea}>

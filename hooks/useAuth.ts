@@ -6,7 +6,7 @@ interface User {
     id: string;
     nombre: string;
     email: string;
-    tipo: string;
+    userType: string;
     [key: string]: any;
 }
 
@@ -16,40 +16,75 @@ export function useAuth(redirectToLoginIfNoUser: boolean = false) {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    useFocusEffect(
-        useCallback(() => {
-            const fetchUsuario = async () => {
-                setLoading(true);
-                try {
-                    const usuarioStr = await AsyncStorage.getItem('usuario');
-                    if (usuarioStr) {
-                        const usuarioData = JSON.parse(usuarioStr);
-                        setUsuario(usuarioData);
-                        setUsuarioId(usuarioData.id);
-                    } else {
-                        setUsuario(null);
-                        setUsuarioId(null);
-                        if (redirectToLoginIfNoUser) {
-                            router.replace('/views/login');
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error al cargar usuario:', error);
+    const fetchUsuario = useCallback(async () => {
+        setLoading(true);
+        try {
+            const usuarioStr = await AsyncStorage.getItem('usuario');
+            console.log('🔍 [useAuth] Usuario en AsyncStorage:', usuarioStr);
+            
+            if (usuarioStr) {
+                const usuarioData = JSON.parse(usuarioStr);
+                console.log('👤 [useAuth] Datos del usuario:', {
+                    id: usuarioData.id,
+                    nombre: usuarioData.nombre,
+                    email: usuarioData.email,
+                    userType: usuarioData.userType
+                });
+
+                // Verificar que el usuario tenga todos los campos necesarios
+                if (usuarioData.id && usuarioData.email && usuarioData.userType) {
+                    setUsuario(usuarioData);
+                    setUsuarioId(usuarioData.id);
+                } else {
+                    console.log('⚠️ [useAuth] Datos de usuario incompletos, limpiando estado');
+                    await AsyncStorage.clear();
                     setUsuario(null);
                     setUsuarioId(null);
-                } finally {
-                    setLoading(false);
+                    if (redirectToLoginIfNoUser) {
+                        router.replace({
+                            pathname: '/views/login'
+                        });
+                    }
                 }
-            };
+            } else {
+                console.log('❌ [useAuth] No hay usuario en AsyncStorage');
+                setUsuario(null);
+                setUsuarioId(null);
+                if (redirectToLoginIfNoUser) {
+                    router.replace({
+                        pathname: '/views/login'
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error al cargar usuario:', error);
+            await AsyncStorage.clear();
+            setUsuario(null);
+            setUsuarioId(null);
+        } finally {
+            setLoading(false);
+        }
+    }, [router, redirectToLoginIfNoUser]);
+
+    useFocusEffect(
+        useCallback(() => {
             fetchUsuario();
-        }, [router, redirectToLoginIfNoUser])
+        }, [fetchUsuario])
     );
 
     const logout = async () => {
-        await AsyncStorage.removeItem('usuario');
-        setUsuario(null);
-        setUsuarioId(null);
-        router.replace('/views/login');
+        try {
+            await AsyncStorage.clear();
+            console.log('🔄 [useAuth] Storage limpiado');
+            setUsuario(null);
+            setUsuarioId(null);
+            console.log('🔄 [useAuth] Estados reseteados');
+            router.replace({
+                pathname: '/views/login'
+            });
+        } catch (error) {
+            console.error('Error durante el logout:', error);
+        }
     };
 
     return {

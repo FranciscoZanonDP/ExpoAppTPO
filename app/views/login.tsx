@@ -17,25 +17,61 @@ export default function LoginScreen() {
             return;
         }
         try {
+            // Limpiar cualquier dato previo
+            await AsyncStorage.clear();
+            console.log('🔄 [Login] Storage limpiado antes de iniciar login');
+
             const response = await fetch('https://expo-app-tpo.vercel.app/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
             });
+            
             const data = await response.json();
             if (!response.ok) {
                 alert('Error: ' + data.error);
                 return;
             }
+
+            // Verificar que los datos del usuario estén completos
+            if (!data.user || !data.user.id || !data.user.email || !data.user.userType) {
+                console.error('❌ [Login] Datos de usuario incompletos:', data.user);
+                alert('Error: Datos de usuario incompletos');
+                return;
+            }
+            
+            // Asegurarse de que el usuario tenga todos los campos necesarios
+            const userToStore = {
+                id: data.user.id,
+                nombre: data.user.nombre,
+                email: data.user.email,
+                userType: data.user.userType
+            };
+            
+            console.log('📝 [Login] Datos del usuario a guardar:', userToStore);
+            
             // Guarda el usuario en AsyncStorage
-            await AsyncStorage.setItem('usuario', JSON.stringify(data.user));
-            alert('¡Login exitoso! Bienvenido, ' + data.user.nombre);
+            await AsyncStorage.setItem('usuario', JSON.stringify(userToStore));
+            console.log('✅ [Login] Usuario guardado en AsyncStorage');
+            
+            // Verificar que se guardó correctamente
+            const storedUser = await AsyncStorage.getItem('usuario');
+            if (!storedUser) {
+                throw new Error('No se pudo verificar el almacenamiento del usuario');
+            }
+            console.log('🔍 [Login] Usuario verificado en storage:', storedUser);
+            
+            alert('¡Login exitoso! Bienvenido, ' + userToStore.nombre);
             
             // Redirigir según el rol del usuario
             if (data.user.userType === 'Administrador') {
-                router.replace('/views/admin-panel');
+                router.replace({
+                    pathname: '/views/admin-panel'
+                });
             } else {
-                router.replace('/views/home');
+                router.replace({
+                    pathname: '/views/home'
+                });
             }
         } catch (error) {
             alert('Error de red: ' + String(error));
@@ -58,8 +94,24 @@ export default function LoginScreen() {
         router.push('/views/forgot-password');
     };
 
-    const handleGuestLogin = () => {
-        router.replace('/views/home');
+    const handleGuestLogin = async () => {
+        try {
+            // Limpiar cualquier dato de usuario previo
+            await AsyncStorage.clear();
+            console.log('🔄 [Login] Storage limpiado para invitado');
+            
+            // Verificar que se limpió correctamente
+            const storedUser = await AsyncStorage.getItem('usuario');
+            console.log('🔍 [Login] Verificación después de limpiar:', storedUser);
+            
+            // Simplemente redirigir al home sin guardar nada
+            router.replace({
+                pathname: '/views/home'
+            });
+        } catch (error) {
+            console.error('❌ [Login] Error durante acceso como invitado:', error);
+            alert('Error al acceder como invitado');
+        }
     };
 
     const dismissKeyboard = () => {

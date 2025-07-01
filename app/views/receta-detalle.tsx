@@ -57,10 +57,30 @@ export default function RecetaDetalleScreen() {
             }
         };
         const fetchUsuario = async () => {
-            const usuarioStr = await AsyncStorage.getItem('usuario');
-            if (usuarioStr) {
-                const usuario = JSON.parse(usuarioStr);
-                setUsuarioId(usuario.id);
+            try {
+                const usuarioStr = await AsyncStorage.getItem('usuario');
+                console.log('🔍 [RecetaDetalle] Usuario en AsyncStorage:', usuarioStr);
+                if (usuarioStr) {
+                    const usuario = JSON.parse(usuarioStr);
+                    console.log('👤 [RecetaDetalle] Datos del usuario:', usuario);
+                    console.log('🔑 [RecetaDetalle] Tipo de usuario:', usuario.userType);
+                    console.log('🆔 [RecetaDetalle] ID de usuario:', usuario.id);
+                    
+                    // Verificar si es un usuario registrado (tiene ID y no es invitado)
+                    if (usuario.id && usuario.userType !== 'guest') {
+                        console.log('✅ [RecetaDetalle] Usuario registrado:', usuario.id);
+                        setUsuarioId(usuario.id);
+                    } else {
+                        console.log('⚠️ [RecetaDetalle] Usuario no registrado o invitado');
+                        setUsuarioId(null);
+                    }
+                } else {
+                    console.log('❌ [RecetaDetalle] No hay usuario en AsyncStorage');
+                    setUsuarioId(null);
+                }
+            } catch (error) {
+                console.error('🚨 [RecetaDetalle] Error al obtener usuario:', error);
+                setUsuarioId(null);
             }
         };
         fetchReceta();

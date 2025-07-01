@@ -177,15 +177,17 @@ export default function HomeScreen() {
     if (tab === 'profile') {
       // Verifica si hay usuario logueado
       const usuarioStr = await AsyncStorage.getItem('usuario');
-      if (usuarioStr) {
-        const usuario = JSON.parse(usuarioStr);
-        if (usuario.userType === 'Alumno') {
-          router.push('/views/alumno-info');
-        } else {
-          router.push('/views/user-info');
-        }
-      } else {
+      if (!usuarioStr) {
+        console.log('❌ [Home] No hay usuario, redirigiendo a login');
         router.push('/views/login');
+        return;
+      }
+      
+      const usuario = JSON.parse(usuarioStr);
+      if (usuario.userType === 'Alumno') {
+        router.push('/views/alumno-info');
+      } else {
+        router.push('/views/user-info');
       }
       return;
     }
