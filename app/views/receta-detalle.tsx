@@ -292,7 +292,7 @@ export default function RecetaDetalleScreen() {
                             <ThemedText style={styles.ingredientesTitle}>Ingredientes ({ingredientes?.length || 0})</ThemedText>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 <TextInput
-                                    style={styles.porcionInput}
+                                    style={[styles.porcionInput, !usuarioId && styles.inputDisabled]}
                                     value={porcionesInput}
                                     onChangeText={handlePorcionesInputChange}
                                     onBlur={handlePorcionesInputEnd}
@@ -303,6 +303,13 @@ export default function RecetaDetalleScreen() {
                                 <ThemedText style={styles.porcionText}>porciones</ThemedText>
                             </View>
                         </View>
+                        {!usuarioId && (
+                            <View style={styles.invitadoMensaje}>
+                                <ThemedText style={styles.invitadoTexto}>
+                                    Inicia sesión para ajustar porciones y guardar recetas
+                                </ThemedText>
+                            </View>
+                        )}
                         {/* Ingredientes */}
                         <View style={{ marginBottom: 30 }}>
                             {ingredientes.map((ing: any, idx: number) => (
@@ -325,9 +332,11 @@ export default function RecetaDetalleScreen() {
                             ))}
                         </View>
                         {/* Botón para guardar receta ajustada localmente */}
-                        <TouchableOpacity style={[styles.empezarBtn, { backgroundColor: '#FF7B6B', marginBottom: 10 }]} onPress={guardarRecetaAjustada}>
-                            <ThemedText style={styles.empezarBtnText}>Guardar receta ajustada</ThemedText>
-                        </TouchableOpacity>
+                        {usuarioId && (
+                            <TouchableOpacity style={[styles.empezarBtn, { backgroundColor: '#FF7B6B', marginBottom: 10 }]} onPress={guardarRecetaAjustada}>
+                                <ThemedText style={styles.empezarBtnText}>Guardar receta ajustada</ThemedText>
+                            </TouchableOpacity>
+                        )}
                         {/* Fin botón guardar */}
                         <TouchableOpacity style={styles.empezarBtn} onPress={() => router.push({ pathname: '/views/receta-pasos', params: { id: receta.id } })}>
                             <ThemedText style={styles.empezarBtnText}>Empezar</ThemedText>
@@ -342,6 +351,21 @@ export default function RecetaDetalleScreen() {
 }
 
 const styles = StyleSheet.create({
+    inputDisabled: {
+        opacity: 0.5,
+        backgroundColor: '#E5E5E5',
+    },
+    invitadoMensaje: {
+        backgroundColor: '#FFF3CD',
+        padding: 10,
+        borderRadius: 8,
+        marginVertical: 10,
+    },
+    invitadoTexto: {
+        color: '#856404',
+        fontSize: 14,
+        textAlign: 'center',
+    },
     mainImage: {
         width: '100%',
         height: 320,

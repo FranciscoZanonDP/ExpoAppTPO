@@ -66,13 +66,14 @@ export default function RecetaPasosScreen() {
     };
 
     const handleFinalizar = () => {
-        if (usuarioId) {
-            // Siempre mostrar modal de valoración si hay usuario
-            // Permitir tanto crear nueva valoración como editar existente
-            setShowValoracionModal(true);
-        } else {
+        // Si es usuario invitado, solo volver atrás
+        if (!usuarioId) {
             router.back();
+            return;
         }
+        
+        // Si es usuario registrado, mostrar modal de valoración
+        setShowValoracionModal(true);
     };
 
     const handleEnviarValoracion = async () => {
