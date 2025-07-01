@@ -25,7 +25,6 @@ export default function UserInfoScreen() {
     }
 
     if (loading) return null;
-
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
