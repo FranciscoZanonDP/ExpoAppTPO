@@ -37,6 +37,10 @@ export default function AlumnoInfoScreen() {
                         <Ionicons name="restaurant" size={20} color="#FF7B6B" style={styles.infoIcon} />
                         <ThemedText style={styles.infoItem}>Mis Recetas</ThemedText>
                     </TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push('/views/recetas-ajustadas')} style={styles.infoItemRow}>
+                        <Ionicons name="construct" size={20} color="#FF7B6B" style={styles.infoIcon} />
+                        <ThemedText style={styles.infoItem}>Recetas ajustadas</ThemedText>
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push('/views/mis-cursos')} style={styles.infoItemRow}>
                         <Ionicons name="school-outline" size={20} color="#FF7B6B" style={styles.infoIcon} />
                         <ThemedText style={styles.infoItem}>Mis Cursos</ThemedText>

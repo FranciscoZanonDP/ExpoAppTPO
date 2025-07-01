@@ -59,12 +59,16 @@ export default function CambiarAlumnoPagoScreen() {
                     </View>
                 </View>
                 <ThemedText style={styles.label}>Cardholder name</ThemedText>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Amy Schumer"
-                    value={cardholder}
-                    onChangeText={setCardholder}
-                />
+                <View style={styles.inputRow}>
+                    <Ionicons name="person-outline" size={22} color="#AAA" style={{ marginRight: 8 }} />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Amy Schumer"
+                        value={cardholder}
+                        onChangeText={setCardholder}
+                        autoCapitalize="words"
+                    />
+                </View>
                 <TouchableOpacity style={styles.button} onPress={() => router.push('/views/cambiar-a-alumno-datos')}>
                     <ThemedText style={styles.buttonText}>Siguiente</ThemedText>
                 </TouchableOpacity>
